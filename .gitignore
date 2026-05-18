@@ -1,0 +1,27 @@
+# Environment — never commit real keys
+.env
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# Data & logs (keep structure, not content)
+data/opportunities.json
+data/opportunities.json.lock
+data/user_settings.json
+backups/
+logs/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# macOS
+.DS_Store
+
+# PIDs
+.backend.pid
+.frontend.pid
