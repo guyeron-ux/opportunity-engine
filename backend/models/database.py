@@ -40,10 +40,11 @@ def _redis_save(db: DatabaseModel) -> bool:
     try:
         import httpx
         payload = db.model_dump_json()
+        # Upstash REST: POST / with ["SET", key, value] command array
         resp = httpx.post(
-            f"{settings.upstash_redis_url}/set/{_REDIS_KEY}",
+            f"{settings.upstash_redis_url}",
             headers={"Authorization": f"Bearer {settings.upstash_redis_token}"},
-            json=[_REDIS_KEY, payload],
+            json=["SET", _REDIS_KEY, payload],
             timeout=10,
         )
         return resp.json().get("result") == "OK"
