@@ -1,18 +1,72 @@
 from __future__ import annotations
 import json
-import shutil
+import logging
 from datetime import datetime, date
-from pathlib import Path
 from filelock import FileLock
 
 from backend.config import settings
 from backend.models.opportunity import DatabaseModel, OpportunityEntry
 
+log = logging.getLogger("database")
 
 _LOCK_PATH = str(settings.opportunities_file) + ".lock"
+_REDIS_KEY = "opportunity_engine_db"
 
+
+# ---------------------------------------------------------------------------
+# Storage backend: Upstash Redis (production) or local JSON file (dev)
+# ---------------------------------------------------------------------------
+
+def _redis_load() -> DatabaseModel | None:
+    """Load DB from Upstash Redis REST API. Returns None on any error."""
+    try:
+        import httpx
+        resp = httpx.get(
+            f"{settings.upstash_redis_url}/get/{_REDIS_KEY}",
+            headers={"Authorization": f"Bearer {settings.upstash_redis_token}"},
+            timeout=10,
+        )
+        result = resp.json().get("result")
+        if result is None:
+            return DatabaseModel()
+        return DatabaseModel.model_validate_json(result)
+    except Exception as e:
+        log.error("Redis load failed: %s", e)
+        return None
+
+
+def _redis_save(db: DatabaseModel) -> bool:
+    """Save DB to Upstash Redis. Returns False on error."""
+    try:
+        import httpx
+        payload = db.model_dump_json()
+        resp = httpx.post(
+            f"{settings.upstash_redis_url}/set/{_REDIS_KEY}",
+            headers={"Authorization": f"Bearer {settings.upstash_redis_token}"},
+            json=[_REDIS_KEY, payload],
+            timeout=10,
+        )
+        return resp.json().get("result") == "OK"
+    except Exception as e:
+        log.error("Redis save failed: %s", e)
+        return False
+
+
+def _use_redis() -> bool:
+    return bool(settings.upstash_redis_url and settings.upstash_redis_token)
+
+
+# ---------------------------------------------------------------------------
+# Public API — identical interface regardless of backend
+# ---------------------------------------------------------------------------
 
 def load_db() -> DatabaseModel:
+    if _use_redis():
+        result = _redis_load()
+        if result is not None:
+            return result
+        log.warning("Redis unavailable, falling back to local file")
+
     path = settings.opportunities_file
     if not path.exists():
         return DatabaseModel()
@@ -22,24 +76,26 @@ def load_db() -> DatabaseModel:
 
 
 def save_db(db: DatabaseModel) -> None:
+    if _use_redis():
+        if _redis_save(db):
+            return
+        log.warning("Redis save failed, falling back to local file")
+
     path = settings.opportunities_file
     path.parent.mkdir(parents=True, exist_ok=True)
     serialized = db.model_dump(mode="json")
     with FileLock(_LOCK_PATH):
         path.write_text(json.dumps(serialized, indent=2, default=str))
-    _backup(serialized)
 
-
-def _backup(data: dict) -> None:
+    # Local backup
     backup_dir = settings.backups_dir
     backup_dir.mkdir(parents=True, exist_ok=True)
     backup_path = backup_dir / f"opportunities_{date.today().isoformat()}.json"
-    backup_path.write_text(json.dumps(data, indent=2, default=str))
+    backup_path.write_text(json.dumps(serialized, indent=2, default=str))
 
 
 def add_opportunity(opp: OpportunityEntry) -> OpportunityEntry:
     db = load_db()
-    # Deduplicate by title similarity (simple check)
     existing_titles = {o.title.lower() for o in db.opportunities}
     if opp.title.lower() in existing_titles:
         return opp
@@ -107,8 +163,7 @@ def get_opportunities(
 
 
 def get_db_settings() -> dict:
-    db = load_db()
-    return db.settings
+    return load_db().settings
 
 
 def update_db_settings(patch: dict) -> dict:

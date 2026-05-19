@@ -14,6 +14,10 @@ class Settings(BaseSettings):
     # Web search
     tavily_api_key: str = ""
 
+    # Persistent storage (Upstash Redis) — if unset, falls back to local JSON file
+    upstash_redis_url: str = ""
+    upstash_redis_token: str = ""
+
     # App
     score_threshold: int = 80
     log_level: str = "INFO"
