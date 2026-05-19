@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     tavily_api_key: str = ""
 
     # App
-    score_threshold: int = 70
+    score_threshold: int = 80
     log_level: str = "INFO"
     # Comma-separated origins allowed for CORS, e.g. https://your-app.netlify.app
     allowed_origins: str = "http://localhost:5173,http://127.0.0.1:5173"

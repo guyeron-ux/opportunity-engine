@@ -12,15 +12,16 @@ on a rigorous 6-factor rubric and classify them.
 Scoring rubric (0-100 each):
 
 1. MARKET SIZE (MS) — weight 25%
-   90-100: $10B+ TAM with clear growth trajectory
-   70-89:  $1B-$10B TAM
+   90-100: $10B+ TAM with clear, fast-growing trajectory (think payments, logistics, healthcare)
+   70-89:  $1B-$10B TAM with strong tailwinds
    50-69:  $100M-$1B TAM
    30-49:  <$100M TAM
    0-29:   Niche/unclear market
 
 2. PAIN SEVERITY (PS) — weight 25%
-   90-100: Critical operational pain, users actively seeking solutions
-   70-89:  Significant daily friction
+   90-100: Critical operational pain at massive scale — entire industries bleeding money or
+           time, with no adequate solution. Users are desperate and vocal.
+   70-89:  Significant daily friction affecting large segments
    50-69:  Moderate inconvenience
    30-49:  Nice-to-have improvement
    0-29:   Theoretical pain
@@ -32,26 +33,53 @@ Scoring rubric (0-100 each):
    0-49:   Vague or highly complex
 
 4. COMPETITIVE INSIGHT (CI) — weight 15%
-   90-100: Fragmented market, clear differentiation angle
-   70-89:  Incumbent weaknesses identified
-   50-69:  Competitive but with niches
-   0-49:   Dominant players with high moats
+   90-100: Fragmented or sleeping-giant market — incumbents are legacy, slow, or mis-aligned.
+           A focused challenger can own a defensible position.
+   70-89:  Incumbent weaknesses clearly identified
+   50-69:  Competitive but with exploitable niches
+   0-49:   Dominant players with deep moats
 
 5. MONETIZATION POTENTIAL (MP) — weight 15%
-   90-100: Proven models, strong unit economics signals
-   70-89:  Clear path to revenue
+   90-100: Proven models with strong unit economics signals — clear path to $100M+ ARR
+   70-89:  Clear path to sustainable revenue
    50-69:  Possible but uncertain
    0-49:   Unclear monetization
 
 6. SIGNAL AUTHORITY (SA) — weight 5%
-   90-100: Multiple authoritative sources (VCs, industry analysts, major press)
+   90-100: Multiple authoritative sources (VCs actively investing, major industry press,
+           regulatory/macro tailwinds)
    70-89:  Mix of authoritative and community signals
    50-69:  Mostly community signals
    0-49:   Single/weak sources
 
-Classification:
-- Moonshot: composite >= 80, high risk/high reward, novel approach
-- Pragmatic: composite 60-79, proven market, incremental innovation
+---
+
+CLASSIFICATION — this is a binary judgment, not a score threshold. Apply it carefully:
+
+MOONSHOT (rare — fewer than 1 in 10 opportunities qualify):
+  A Moonshot is a once-in-a-decade market opportunity. If it succeeds, it does not just
+  build a business — it fundamentally restructures how an entire industry operates.
+  Think: Uber reimagined transportation, Stripe rebuilt payments infrastructure,
+  Airbnb redefined hospitality, SpaceX reinvented launch.
+
+  ALL of the following must be true to label something a Moonshot:
+  1. TAM is $10B+ AND the market is structurally broken or ripe for platform displacement
+  2. The pain is industry-wide and systemic — not a segment or workflow problem
+  3. The solution requires (or enables) a genuine behavioral or technological shift
+     at scale — not just a better UI on existing workflows
+  4. If it works, the winner could realistically reach $1B+ valuation (unicorn) and
+     potentially $100B+ (hectacorn) by owning the new category
+  5. There is a credible path to network effects, platform lock-in, or
+     defensible infrastructure that prevents easy replication
+
+  When in doubt, do NOT classify as Moonshot. Reserve it for opportunities that
+  genuinely meet all five criteria above.
+
+PRAGMATIC (the default for high-quality opportunities):
+  A solid, executable business opportunity. Clear market, proven demand, achievable
+  differentiation. An excellent candidate for a capital-efficient, profitable company
+  in the $10M–$500M revenue range. Important and worth building — just not
+  industry-restructuring.
 """
 
 
@@ -120,12 +148,19 @@ Return a JSON object with these exact keys:
   }},
   "classification": {{
     "type": "Moonshot" or "Pragmatic",
+    "moonshot_justification": "If Moonshot: which of the 5 criteria are met and why. If Pragmatic: why it does NOT qualify as a Moonshot.",
     "category": "SaaS|Marketplace|API|Platform|Hardware|Consumer|Other",
     "industry": "main industry vertical",
     "tech_stack": ["relevant tech"],
     "tags": ["3-5 descriptive tags"]
   }}
 }}
+
+IMPORTANT on classification: Be conservative. Moonshot is reserved for opportunities that
+could genuinely restructure an entire industry and produce a unicorn or hectacorn.
+Most strong opportunities are Pragmatic — that is not a lesser designation, it means
+excellent and executable. Only classify as Moonshot if ALL five criteria in the system
+prompt are clearly met.
 
 Return valid JSON only, no markdown."""
 
