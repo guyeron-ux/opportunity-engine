@@ -20,6 +20,7 @@ export interface Ratings {
 
 export interface Classification {
   type: string
+  moonshot_justification: string
   category: string
   industry: string
   tech_stack: string[]
@@ -89,4 +90,15 @@ export const api = {
     req('/settings', { method: 'PATCH', body: JSON.stringify(patch) }),
   triggerCycle: () => req<{ ok: boolean; message: string }>('/cycle/run', { method: 'POST' }),
   getCycleStatus: () => req<CycleStatus>('/cycle/status'),
+  rerateAll: () => req<{ ok: boolean; message: string }>('/opportunities/rerate', { method: 'POST' }),
+  uploadFile: async (file: File): Promise<{ ok: boolean; message: string }> => {
+    const form = new FormData()
+    form.append('file', file)
+    const res = await fetch(BASE + '/upload', { method: 'POST', body: form })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }))
+      return { ok: false, message: err.detail || res.statusText }
+    }
+    return res.json()
+  },
 }

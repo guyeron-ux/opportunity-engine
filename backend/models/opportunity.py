@@ -31,6 +31,7 @@ class Ratings(BaseModel):
 
 class Classification(BaseModel):
     type: str = ""          # "Moonshot" | "Pragmatic"
+    moonshot_justification: str = ""
     category: str = ""      # e.g. "SaaS", "Marketplace", "API"
     industry: str = ""
     tech_stack: list[str] = []

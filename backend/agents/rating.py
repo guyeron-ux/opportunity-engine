@@ -197,6 +197,7 @@ Return valid JSON only, no markdown."""
         cls_data = scored.get("classification", {})
         classification = Classification(
             type=cls_data.get("type", "Pragmatic"),
+            moonshot_justification=cls_data.get("moonshot_justification", ""),
             category=cls_data.get("category", "SaaS"),
             industry=cls_data.get("industry", "Technology"),
             tech_stack=cls_data.get("tech_stack", []),

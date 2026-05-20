@@ -149,6 +149,160 @@ class Orchestrator:
             "top_opportunity": max(new_opps, key=lambda o: o.composite_score).title if new_opps else None,
         }
 
+    # --- Rerate existing opportunities ---
+
+    def rerate_all(self):
+        if self._cycle_running:
+            return False
+        self._cycle_running = True
+        update_db_settings({"cycle_running": True})
+        asyncio.run(self._async_rerate())
+        return True
+
+    async def _async_rerate(self):
+        from backend.models.database import load_db, save_db
+        try:
+            db = load_db()
+            opps = db.opportunities[:]
+            await self._broadcast("rerate_start", {"total": len(opps)})
+            log.info("Re-rating %d opportunities", len(opps))
+
+            loop = asyncio.get_event_loop()
+            for i, opp in enumerate(opps):
+                report = self._opp_to_report(opp)
+                new_rating = await loop.run_in_executor(None, self._rater.rate, report)
+                if new_rating:
+                    opp.ratings = new_rating.ratings
+                    opp.composite_score = new_rating.composite_score
+                    opp.classification = new_rating.classification
+                    from datetime import datetime
+                    opp.updated_at = datetime.utcnow()
+                await self._broadcast("rerate_progress", {
+                    "done": i + 1,
+                    "total": len(opps),
+                    "title": opp.title,
+                    "type": opp.classification.type,
+                    "score": opp.composite_score,
+                })
+
+            db.opportunities.sort(key=lambda o: o.composite_score, reverse=True)
+            update_db_settings({"cycle_running": False})
+            save_db(db)
+            await self._broadcast("rerate_done", {"total": len(opps)})
+            log.info("Re-rating complete")
+        except Exception as e:
+            log.error("Rerate error: %s", e, exc_info=True)
+            update_db_settings({"cycle_running": False})
+            await self._broadcast("rerate_error", {"error": str(e)})
+        finally:
+            self._cycle_running = False
+
+    def _opp_to_report(self, opp) -> dict:
+        return {
+            "title": opp.title,
+            "pain_point_summary": opp.research.pain_point_summary,
+            "affected_segments": opp.research.affected_segments,
+            "market_size_estimate": opp.research.market_size_estimate,
+            "market_growth_rate": opp.research.market_growth_rate,
+            "competitors": opp.research.competitors,
+            "monetization_models": opp.research.monetization_models,
+            "solution_hypothesis": opp.research.solution_hypothesis,
+            "sources": opp.research.sources,
+            "signal_sources": opp.research.signal_sources,
+            "raw_signals": opp.research.raw_signals,
+        }
+
+    # --- Upload processing ---
+
+    def process_upload(self, text: str, filename: str):
+        if self._cycle_running:
+            return False
+        self._cycle_running = True
+        update_db_settings({"cycle_running": True})
+        asyncio.run(self._async_process_upload(text, filename))
+        return True
+
+    async def _async_process_upload(self, text: str, filename: str):
+        try:
+            await self._broadcast("cycle_start", {
+                "timestamp": datetime.utcnow().isoformat(),
+                "source": filename,
+            })
+            log.info("Processing upload: %s", filename)
+
+            loop = asyncio.get_event_loop()
+            signals = await loop.run_in_executor(None, self._extract_signals_from_text, text)
+            log.info("Extracted %d signals from upload", len(signals))
+            await self._broadcast("scouts_done", {"signal_count": len(signals)})
+
+            new_opps = []
+            for i, signal in enumerate(signals):
+                try:
+                    report = await loop.run_in_executor(None, self._analyst.analyze, signal)
+                    opp = await loop.run_in_executor(None, self._rater.rate, report)
+                    if opp:
+                        saved = add_opportunity(opp)
+                        new_opps.append(saved)
+                        await self._broadcast("opportunity_added", {
+                            "id": opp.id,
+                            "title": opp.title,
+                            "score": opp.composite_score,
+                            "type": opp.classification.type,
+                        })
+                except Exception as e:
+                    log.error("Error processing uploaded signal '%s': %s", signal.get("title"), e)
+                await self._broadcast("batch_done", {
+                    "processed": i + 1,
+                    "total": len(signals),
+                    "new_opportunities": len(new_opps),
+                })
+
+            summary = self._generate_summary(new_opps)
+            update_db_settings({"cycle_running": False, "last_cycle_summary": summary})
+            await self._broadcast("cycle_done", {
+                "new_opportunities": len(new_opps),
+                "summary": summary,
+            })
+            log.info("Upload processing complete: %d new opportunities", len(new_opps))
+        except Exception as e:
+            log.error("Upload processing error: %s", e, exc_info=True)
+            update_db_settings({"cycle_running": False})
+            await self._broadcast("cycle_error", {"error": str(e)})
+        finally:
+            self._cycle_running = False
+
+    def _extract_signals_from_text(self, text: str) -> list[dict]:
+        prompt = f"""Extract startup opportunity signals from the following text.
+
+For each distinct opportunity, pain point, or market gap mentioned, return a structured signal.
+
+Return a JSON array (no markdown):
+[
+  {{
+    "title": "concise opportunity name",
+    "pain_point_summary": "description of the problem or gap",
+    "signal_strength": 3,
+    "source": "uploaded document"
+  }}
+]
+
+If the document contains a single opportunity, return an array with one item.
+Only extract concrete, actionable opportunities — skip vague mentions.
+
+TEXT:
+{text[:12000]}"""
+
+        try:
+            result = self._rater._call_json(
+                [{"role": "user", "content": prompt}],
+                max_tokens=2000,
+            )
+            if isinstance(result, list):
+                return result
+        except Exception as e:
+            log.error("Signal extraction failed: %s", e)
+        return []
+
     # --- User command handlers ---
 
     def annotate(self, opp_id: str, notes: str) -> bool:

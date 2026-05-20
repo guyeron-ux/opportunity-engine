@@ -153,6 +153,16 @@ export function OpportunityDetail({ opp, onClose, onUpdate }: Props) {
             </section>
           )}
 
+          {/* Moonshot / Pragmatic justification */}
+          {opp.classification.moonshot_justification && (
+            <section>
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                {opp.classification.type === 'Moonshot' ? '🚀 Moonshot Criteria' : 'Why Pragmatic'}
+              </h3>
+              <p className="text-sm text-gray-300 leading-relaxed">{opp.classification.moonshot_justification}</p>
+            </section>
+          )}
+
           {/* Tags */}
           {opp.classification.tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5">

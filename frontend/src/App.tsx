@@ -5,6 +5,7 @@ import { OpportunityDetail } from './components/OpportunityDetail'
 import { FilterPanel } from './components/FilterPanel'
 import { NotificationPanel } from './components/NotificationPanel'
 import { CycleBanner } from './components/CycleBanner'
+import { UploadModal } from './components/UploadModal'
 import { useWebSocket, type WsMessage } from './hooks/useWebSocket'
 
 interface Filters {
@@ -61,6 +62,7 @@ export default function App() {
   const [cycleStats, setCycleStats] = useState<CycleStats>({ signals: 0, scored: 0, total: 0 })
   const [lastEvent, setLastEvent] = useState('')
   const [triggerError, setTriggerError] = useState('')
+  const [showUpload, setShowUpload] = useState(false)
 
   // Shared WebSocket message bus — notifications + banner both consume this
   const wsNotifyRef = useRef<((msg: WsMessage) => void) | null>(null)
@@ -132,6 +134,26 @@ export default function App() {
         setLastEvent('')
         setTriggerError(`Cycle error: ${msg.data.error}`)
         break
+      case 'rerate_start':
+        setCycleRunning(true)
+        setCycleStartedAt(new Date().toISOString())
+        setCycleStats({ signals: 0, scored: 0, total: msg.data.total as number })
+        setLastEvent(`Re-rating ${msg.data.total} opportunities…`)
+        break
+      case 'rerate_progress':
+        setCycleStats(s => ({ ...s, scored: msg.data.done as number, total: msg.data.total as number }))
+        setLastEvent(`Re-rated: ${msg.data.title} → ${msg.data.type} (${(msg.data.score as number).toFixed(1)})`)
+        break
+      case 'rerate_done':
+        setCycleRunning(false)
+        setLastEvent('')
+        refetch()
+        break
+      case 'rerate_error':
+        setCycleRunning(false)
+        setLastEvent('')
+        setTriggerError(`Re-rate error: ${msg.data.error}`)
+        break
     }
   }, [refetch])
 
@@ -154,6 +176,22 @@ export default function App() {
     }
   }
 
+  async function triggerRerate() {
+    setTriggerError('')
+    try {
+      const res = await api.rerateAll()
+      if (!res.ok) {
+        setTriggerError(res.message)
+      } else {
+        setCycleRunning(true)
+        setCycleStartedAt(new Date().toISOString())
+        setLastEvent('Re-rating opportunities…')
+      }
+    } catch {
+      setTriggerError('Could not reach backend')
+    }
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
@@ -167,6 +205,22 @@ export default function App() {
           {triggerError && (
             <span className="text-xs text-red-400">{triggerError}</span>
           )}
+          <button
+            onClick={() => setShowUpload(true)}
+            disabled={cycleRunning}
+            className="text-xs border border-gray-600 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed text-gray-300 px-3 py-2 rounded-lg transition-colors"
+            title="Import from PDF or Markdown"
+          >
+            ↑ Import
+          </button>
+          <button
+            onClick={triggerRerate}
+            disabled={cycleRunning}
+            className="text-xs border border-gray-600 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed text-gray-300 px-3 py-2 rounded-lg transition-colors"
+            title="Re-score existing opportunities with updated rubric"
+          >
+            ↻ Rerate
+          </button>
           <button
             onClick={triggerCycle}
             disabled={cycleRunning}
@@ -215,6 +269,10 @@ export default function App() {
           onClose={() => setSelected(null)}
           onUpdate={refetch}
         />
+      )}
+
+      {showUpload && (
+        <UploadModal onClose={() => setShowUpload(false)} />
       )}
     </div>
   )

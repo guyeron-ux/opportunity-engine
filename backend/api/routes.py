@@ -1,9 +1,10 @@
 from __future__ import annotations
 import asyncio
+import io
 import threading
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, UploadFile, File
 from pydantic import BaseModel
 
 from backend.models.database import (
@@ -127,5 +128,51 @@ def trigger_cycle():
 @router.get("/cycle/status")
 def cycle_status():
     return get_orchestrator().get_status()
+
+
+@router.post("/opportunities/rerate")
+def rerate_opportunities():
+    orch = get_orchestrator()
+    if orch._cycle_running:
+        return {"ok": False, "message": "Cycle already running"}
+    thread = threading.Thread(target=orch.rerate_all, daemon=True)
+    thread.start()
+    return {"ok": True, "message": "Re-rating started"}
+
+
+@router.post("/upload")
+async def upload_file(file: UploadFile = File(...)):
+    orch = get_orchestrator()
+    if orch._cycle_running:
+        raise HTTPException(409, "A cycle or upload is already running")
+
+    content = await file.read()
+    filename = file.filename or "upload"
+    ext = filename.rsplit(".", 1)[-1].lower()
+
+    if ext == "pdf":
+        try:
+            import pdfplumber
+            with pdfplumber.open(io.BytesIO(content)) as pdf:
+                text = "\n".join(
+                    page.extract_text() or "" for page in pdf.pages
+                )
+        except Exception as e:
+            raise HTTPException(400, f"Could not parse PDF: {e}")
+    else:
+        # .md / .txt — plain text
+        try:
+            text = content.decode("utf-8", errors="replace")
+        except Exception as e:
+            raise HTTPException(400, f"Could not read file: {e}")
+
+    if not text.strip():
+        raise HTTPException(400, "File appears to be empty or unreadable")
+
+    thread = threading.Thread(
+        target=orch.process_upload, args=(text, filename), daemon=True
+    )
+    thread.start()
+    return {"ok": True, "message": f"Processing '{filename}' — pipeline running"}
 
 
