@@ -8,6 +8,9 @@ class RatingFactor(BaseModel):
     score: int = Field(ge=0, le=100)
     rationale: str = ""
     evidence: list[str] = []
+    # Market size factor only
+    solution_tam: str = ""
+    industry_size: str = ""
 
 
 class Ratings(BaseModel):
@@ -42,6 +45,8 @@ class ResearchData(BaseModel):
     pain_point_summary: str = ""
     affected_segments: list[str] = []
     market_size_estimate: str = ""
+    solution_tam_estimate: str = ""
+    tam_derivation: str = ""
     market_growth_rate: str = ""
     competitors: list[dict] = []
     monetization_models: list[str] = []

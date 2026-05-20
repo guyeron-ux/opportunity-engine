@@ -86,7 +86,9 @@ Now synthesize this into a structured analysis. Return a JSON object:
   "title": "specific, descriptive opportunity name (NEVER 'Unknown' — always derive from research)",
   "pain_point_summary": "3-5 sentence summary of the validated pain point",
   "affected_segments": ["segment1", "segment2"],
-  "market_size_estimate": "e.g. $2.3B TAM",
+  "market_size_estimate": "total industry/market size for context, e.g. '$2.3B global market'",
+  "solution_tam_estimate": "direct TAM for this solution (revenue potential, not industry GMV), e.g. '$180M'",
+  "tam_derivation": "show calculation: addressable segment × penetration % × unit price, e.g. '50k SMBs × 10% penetration × $3.6k/yr = $18M'",
   "market_growth_rate": "e.g. 18% CAGR",
   "competitors": [
     {{"name": "CompanyX", "weakness": "why it falls short", "url": "..."}}

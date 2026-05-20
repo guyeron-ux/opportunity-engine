@@ -12,11 +12,22 @@ on a rigorous 6-factor rubric and classify them.
 Scoring rubric (0-100 each):
 
 1. MARKET SIZE (MS) — weight 25%
-   90-100: $10B+ TAM with clear, fast-growing trajectory (think payments, logistics, healthcare)
-   70-89:  $1B-$10B TAM with strong tailwinds
-   50-69:  $100M-$1B TAM
-   30-49:  <$100M TAM
-   0-29:   Niche/unclear market
+   Score on the DIRECT SOLUTION TAM — what the proposed platform or product can
+   realistically capture as revenue — NOT the total industry spend or GMV.
+
+   Derivation is required: identify the business model, apply realistic penetration
+   (typically 1–15% of the addressable segment), and multiply by unit economics.
+
+   Examples of correct derivation:
+   - $22B global surrogacy market → E2E platform capturing 5% of deals at 8% take rate = ~$88M TAM → score 45
+   - $500B logistics market → SaaS for 200k SMB carriers at $3k/yr = $600M TAM → score 72
+   - $4T global payments → infrastructure layer at 0.1% of volume = $4B TAM → score 90
+
+   90-100: Solution TAM $3B+
+   70-89:  Solution TAM $500M–$3B
+   50-69:  Solution TAM $100M–$500M
+   30-49:  Solution TAM $20M–$100M
+   0-29:   Solution TAM <$20M or highly speculative
 
 2. PAIN SEVERITY (PS) — weight 25%
    90-100: Critical operational pain at massive scale — entire industries bleeding money or
@@ -111,7 +122,8 @@ class RatingAgent(BaseAgent):
 Title: {title}
 Pain Point: {report.get('pain_point_summary', '')}
 Affected Segments: {report.get('affected_segments', [])}
-Market Size: {report.get('market_size_estimate', 'Unknown')}
+Industry Market Size: {report.get('market_size_estimate', 'Unknown')}
+Solution TAM (if pre-derived): {report.get('solution_tam_estimate', 'derive from data')}
 Market Growth: {report.get('market_growth_rate', 'Unknown')}
 Competitors: {report.get('competitors', [])}
 Monetization Models: {models}
@@ -122,7 +134,9 @@ Return a JSON object with these exact keys:
 {{
   "market_size": {{
     "score": 0-100,
-    "rationale": "1-2 sentence justification",
+    "industry_size": "total industry/market size for context",
+    "solution_tam": "derived direct TAM for this solution (show calculation)",
+    "rationale": "1-2 sentences justifying the score based on solution TAM",
     "evidence": ["key data point 1", "key data point 2"]
   }},
   "pain_severity": {{
@@ -182,15 +196,24 @@ Return valid JSON only, no markdown."""
         db = load_db()
         opp_id = generate_opportunity_id(db)
 
-        def make_factor(data: dict) -> RatingFactor:
-            return RatingFactor(
+        def make_factor(data: dict, extra: dict | None = None) -> RatingFactor:
+            f = RatingFactor(
                 score=max(0, min(100, int(data.get("score", 0)))),
                 rationale=data.get("rationale", ""),
                 evidence=data.get("evidence", []),
             )
+            if extra:
+                for k, v in extra.items():
+                    if hasattr(f, k):
+                        setattr(f, k, v)
+            return f
 
+        ms_data = scored.get("market_size", {})
         ratings = Ratings(
-            market_size=make_factor(scored.get("market_size", {})),
+            market_size=make_factor(ms_data, {
+                "solution_tam": ms_data.get("solution_tam", ""),
+                "industry_size": ms_data.get("industry_size", ""),
+            }),
             pain_severity=make_factor(scored.get("pain_severity", {})),
             solution_clarity=make_factor(scored.get("solution_clarity", {})),
             competitive_insight=make_factor(scored.get("competitive_insight", {})),
@@ -212,6 +235,10 @@ Return valid JSON only, no markdown."""
             pain_point_summary=report.get("pain_point_summary", ""),
             affected_segments=report.get("affected_segments", []),
             market_size_estimate=report.get("market_size_estimate", ""),
+            solution_tam_estimate=report.get("solution_tam_estimate",
+                ms_data.get("solution_tam", "")),
+            tam_derivation=report.get("tam_derivation",
+                ms_data.get("solution_tam", "")),
             market_growth_rate=report.get("market_growth_rate", ""),
             competitors=report.get("competitors", []),
             monetization_models=report.get("monetization_models", []),

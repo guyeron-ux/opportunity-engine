@@ -135,10 +135,21 @@ export function OpportunityDetail({ opp, onClose, onUpdate }: Props) {
           {/* Market */}
           <section>
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Market</h3>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <div className="bg-gray-800 rounded-lg p-3 col-span-2 border border-emerald-900/40">
+                <p className="text-xs text-gray-500">Solution TAM <span className="text-gray-600">(direct revenue opportunity)</span></p>
+                <p className="text-sm font-bold text-emerald-400 mt-1">
+                  {opp.ratings.market_size.solution_tam || opp.research.solution_tam_estimate || '—'}
+                </p>
+                {(opp.research.tam_derivation) && (
+                  <p className="text-xs text-gray-500 mt-1">{opp.research.tam_derivation}</p>
+                )}
+              </div>
               <div className="bg-gray-800 rounded-lg p-3">
-                <p className="text-xs text-gray-500">TAM Estimate</p>
-                <p className="text-sm font-semibold mt-1">{opp.research.market_size_estimate || '—'}</p>
+                <p className="text-xs text-gray-500">Industry Size</p>
+                <p className="text-sm font-semibold mt-1">
+                  {opp.ratings.market_size.industry_size || opp.research.market_size_estimate || '—'}
+                </p>
               </div>
               <div className="bg-gray-800 rounded-lg p-3">
                 <p className="text-xs text-gray-500">Growth Rate</p>

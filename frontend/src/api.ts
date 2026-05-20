@@ -7,6 +7,8 @@ export interface RatingFactor {
   score: number
   rationale: string
   evidence: string[]
+  solution_tam?: string
+  industry_size?: string
 }
 
 export interface Ratings {
@@ -31,6 +33,8 @@ export interface ResearchData {
   pain_point_summary: string
   affected_segments: string[]
   market_size_estimate: string
+  solution_tam_estimate: string
+  tam_derivation: string
   market_growth_rate: string
   competitors: Array<{ name: string; weakness: string; url?: string }>
   monetization_models: string[]
