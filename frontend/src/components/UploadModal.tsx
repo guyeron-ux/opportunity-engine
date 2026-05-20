@@ -116,25 +116,27 @@ export function UploadModal({ onClose }: Props) {
             </button>
           </div>
 
-          {imports.length > 0 && (
-            <div className="pt-2 border-t border-gray-800">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Import History</h3>
-              <div className="space-y-1 max-h-36 overflow-y-auto">
+          <div className="pt-2 border-t border-gray-800">
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Import History</h3>
+            {imports.length === 0 ? (
+              <p className="text-xs text-gray-600">No imports yet.</p>
+            ) : (
+              <div className="space-y-1 max-h-40 overflow-y-auto">
                 {[...imports].reverse().map(imp => (
-                  <div key={imp.id} className="flex items-center justify-between text-xs py-1">
+                  <div key={imp.id} className="flex items-center justify-between text-xs py-1.5 border-b border-gray-800/50 last:border-0">
                     <div className="min-w-0">
-                      <span className="text-gray-300 truncate block">{imp.filename}</span>
-                      <span className="text-gray-600">{new Date(imp.imported_at).toLocaleString()}</span>
+                      <span className="text-gray-200 truncate block font-medium">{imp.filename}</span>
+                      <span className="text-gray-500">{new Date(imp.imported_at).toLocaleString()}</span>
                     </div>
-                    <div className="text-gray-500 text-right shrink-0 ml-3">
-                      <div>{imp.signals_extracted} signals</div>
-                      <div>{imp.opportunities_added} added</div>
+                    <div className="text-right shrink-0 ml-4">
+                      <div className="text-gray-300">{imp.opportunities_added} added</div>
+                      <div className="text-gray-600">{imp.signals_extracted} signals</div>
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>
