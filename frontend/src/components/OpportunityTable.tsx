@@ -29,8 +29,22 @@ function TypeBadge({ type }: { type: string }) {
   )
 }
 
-function latestCycleId(opportunities: Opportunity[]): string {
-  return opportunities.reduce((max, o) => (o.cycle_id > max ? o.cycle_id : max), '')
+function latestBatchIds(opportunities: Opportunity[]): Set<string> {
+  if (!opportunities.length) return new Set()
+  // Sort newest-first by created_at
+  const sorted = [...opportunities].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  )
+  // Walk back from the newest entry; stop when we hit a gap > 30 min between consecutive entries
+  // This correctly separates batches regardless of how cycle_id is formatted
+  const GAP_MS = 30 * 60 * 1000
+  const batch = new Set<string>([sorted[0].id])
+  for (let i = 1; i < sorted.length; i++) {
+    const gap = new Date(sorted[i - 1].created_at).getTime() - new Date(sorted[i].created_at).getTime()
+    if (gap > GAP_MS) break
+    batch.add(sorted[i].id)
+  }
+  return batch
 }
 
 export function OpportunityTable({ opportunities, onSelect, loading }: Props) {
@@ -51,7 +65,7 @@ export function OpportunityTable({ opportunities, onSelect, loading }: Props) {
     )
   }
 
-  const newestCycleId = latestCycleId(opportunities)
+  const newestBatch = latestBatchIds(opportunities)
 
   return (
     <div className="flex-1 overflow-auto">
@@ -70,7 +84,7 @@ export function OpportunityTable({ opportunities, onSelect, loading }: Props) {
         </thead>
         <tbody>
           {opportunities.map((opp, i) => {
-            const isNew = newestCycleId && opp.cycle_id === newestCycleId
+            const isNew = newestBatch.has(opp.id)
             return (
             <tr
               key={opp.id}
@@ -129,7 +143,7 @@ export function OpportunityTable({ opportunities, onSelect, loading }: Props) {
       {/* Mobile card list */}
       <div className="md:hidden space-y-2 p-2">
         {opportunities.map((opp) => {
-          const isNew = newestCycleId && opp.cycle_id === newestCycleId
+          const isNew = newestBatch.has(opp.id)
           return (
           <div
             key={opp.id}

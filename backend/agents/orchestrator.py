@@ -38,6 +38,7 @@ class Orchestrator:
             log.warning("Cycle already running, skipping.")
             return
         self._cycle_running = True
+        self._current_cycle_id = datetime.utcnow().strftime("%Y%m%d-%H%M")
         update_db_settings({"cycle_running": True, "last_cycle_run": datetime.utcnow().isoformat()})
 
         asyncio.run(self._async_cycle())
@@ -127,6 +128,7 @@ class Orchestrator:
                 # Rating
                 opp = await loop.run_in_executor(None, self._rater.rate, report)
                 if opp:
+                    opp.cycle_id = getattr(self, '_current_cycle_id', opp.cycle_id)
                     if _is_pure_b2g(opp):
                         log.info("Skipping pure B2G opportunity: '%s'", opp.title)
                     else:
@@ -349,6 +351,7 @@ class Orchestrator:
         if self._cycle_running:
             return False
         self._cycle_running = True
+        self._current_cycle_id = datetime.utcnow().strftime("%Y%m%d-%H%M")
         update_db_settings({"cycle_running": True})
         asyncio.run(self._async_process_upload(text, filename))
         return True
@@ -372,6 +375,7 @@ class Orchestrator:
                     report = await loop.run_in_executor(None, self._analyst.analyze, signal)
                     opp = await loop.run_in_executor(None, self._rater.rate, report)
                     if opp:
+                        opp.cycle_id = getattr(self, '_current_cycle_id', opp.cycle_id)
                         if _is_pure_b2g(opp):
                             log.info("Skipping pure B2G (upload): '%s'", opp.title)
                         else:
