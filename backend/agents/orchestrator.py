@@ -176,21 +176,24 @@ class Orchestrator:
             loop = asyncio.get_event_loop()
             b2g_archived = 0
             for i, opp in enumerate(opps):
-                report = self._opp_to_report(opp)
-                new_rating = await loop.run_in_executor(None, self._rater.rate, report)
-                if new_rating:
-                    opp.ratings = new_rating.ratings
-                    opp.composite_score = new_rating.composite_score
-                    opp.classification = new_rating.classification
-                    opp.updated_at = datetime.utcnow()
-                    # Archive pure B2G opportunities
-                    if _is_pure_b2g(opp):
-                        log.info("Archiving pure B2G: '%s'", opp.title)
-                        opp.user.archived = True
-                        opp.user.archived_at = datetime.utcnow()
-                        db.archived_opportunities.append(opp)
-                        db.opportunities.remove(opp)
-                        b2g_archived += 1
+                try:
+                    report = self._opp_to_report(opp)
+                    new_rating = await loop.run_in_executor(None, self._rater.rate, report)
+                    if new_rating:
+                        opp.ratings = new_rating.ratings
+                        opp.composite_score = new_rating.composite_score
+                        opp.classification = new_rating.classification
+                        opp.updated_at = datetime.utcnow()
+                        # Archive pure B2G opportunities
+                        if _is_pure_b2g(opp):
+                            log.info("Archiving pure B2G: '%s'", opp.title)
+                            opp.user.archived = True
+                            opp.user.archived_at = datetime.utcnow()
+                            db.archived_opportunities.append(opp)
+                            db.opportunities.remove(opp)
+                            b2g_archived += 1
+                except Exception as e:
+                    log.error("Rerate failed for '%s': %s", opp.title, e)
                 await self._broadcast("rerate_progress", {
                     "done": i + 1,
                     "total": len(opps),
