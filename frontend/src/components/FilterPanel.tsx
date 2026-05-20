@@ -3,6 +3,7 @@ interface Filters {
   types: string[]
   categories: string[]
   industries: string[]
+  gtm: string[]
 }
 
 interface FilterPanelProps {
@@ -11,6 +12,7 @@ interface FilterPanelProps {
 }
 
 const TYPES = ['Moonshot', 'Pragmatic']
+const GTM = ['B2B', 'B2C', 'B2G']
 const CATEGORIES = ['SaaS', 'Marketplace', 'API', 'Platform', 'Hardware', 'Consumer', 'Other']
 const INDUSTRIES = [
   'Technology', 'Healthcare', 'Finance', 'Education', 'Logistics',
@@ -106,10 +108,25 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
         </div>
       </div>
 
+      {/* Go-to-Market */}
+      <div>
+        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Go-to-Market</h3>
+        <div className="flex flex-wrap gap-1.5">
+          {GTM.map((g) => (
+            <Toggle
+              key={g}
+              label={g}
+              active={filters.gtm.includes(g)}
+              onClick={() => onChange({ ...filters, gtm: toggleItem(filters.gtm, g) })}
+            />
+          ))}
+        </div>
+      </div>
+
       {/* Reset */}
-      {(filters.types.length > 0 || filters.categories.length > 0 || filters.industries.length > 0) && (
+      {(filters.types.length > 0 || filters.categories.length > 0 || filters.industries.length > 0 || filters.gtm.length > 0) && (
         <button
-          onClick={() => onChange({ min_score: filters.min_score, types: [], categories: [], industries: [] })}
+          onClick={() => onChange({ min_score: filters.min_score, types: [], categories: [], industries: [], gtm: [] })}
           className="text-xs text-violet-400 hover:text-violet-300 underline"
         >
           Clear filters

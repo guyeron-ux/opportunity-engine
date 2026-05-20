@@ -13,6 +13,7 @@ interface Filters {
   types: string[]
   categories: string[]
   industries: string[]
+  gtm: string[]
 }
 
 interface CycleStats {
@@ -38,6 +39,10 @@ function useOpportunities(filters: Filters) {
       if (filters.types.length > 1) filtered = filtered.filter(o => filters.types.includes(o.classification.type))
       if (filters.categories.length > 1) filtered = filtered.filter(o => filters.categories.includes(o.classification.category))
       if (filters.industries.length > 1) filtered = filtered.filter(o => filters.industries.includes(o.classification.industry))
+      // GTM: "B2B" matches "B2B", "B2B/B2C", "B2B/B2G", etc.
+      if (filters.gtm.length > 0) filtered = filtered.filter(o =>
+        filters.gtm.some(g => o.classification.go_to_market.includes(g))
+      )
       setData(filtered)
     } catch (e) {
       console.error(e)
@@ -52,7 +57,7 @@ function useOpportunities(filters: Filters) {
 
 export default function App() {
   const [filters, setFilters] = useState<Filters>({
-    min_score: 0, types: [], categories: [], industries: [],
+    min_score: 0, types: [], categories: [], industries: [], gtm: [],
   })
   const [selected, setSelected] = useState<Opportunity | null>(null)
 
