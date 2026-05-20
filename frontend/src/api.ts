@@ -1,7 +1,7 @@
-// In production (Netlify), set VITE_API_URL to your Railway backend URL.
+// In production (Netlify), VITE_API_URL is baked in at build time.
 // Locally, Vite proxies /api → localhost:8000 so no env var needed.
-const BASE = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') + '/api'
-  || '/api'
+const _origin = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '')
+const BASE = _origin ? `${_origin}/api` : '/api'
 
 export interface RatingFactor {
   score: number
