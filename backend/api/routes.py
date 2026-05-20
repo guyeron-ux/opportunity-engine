@@ -8,7 +8,8 @@ from fastapi import APIRouter, HTTPException, Query, UploadFile, File
 from pydantic import BaseModel
 
 from backend.models.database import (
-    get_opportunities, archive_opportunity, update_opportunity, get_db_settings, update_db_settings
+    get_opportunities, archive_opportunity, update_opportunity,
+    get_db_settings, update_db_settings, load_db,
 )
 from backend.models.opportunity import OpportunityEntry
 from backend.api.websocket import ws_manager
@@ -138,6 +139,11 @@ def rerate_opportunities():
     thread = threading.Thread(target=orch.rerate_all, daemon=True)
     thread.start()
     return {"ok": True, "message": "Re-rating started"}
+
+
+@router.get("/imports")
+def list_imports():
+    return load_db().imports
 
 
 @router.post("/upload")

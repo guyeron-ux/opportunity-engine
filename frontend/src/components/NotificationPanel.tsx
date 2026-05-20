@@ -11,12 +11,16 @@ interface Notification {
 let _notifId = 0
 
 function eventMessage(msg: WsMessage): string {
-  if (msg.event === 'opportunity_added') return `${msg.data.title} — score: ${(msg.data.score as number).toFixed(1)}`
+  if (msg.event === 'opportunity_added') return `New: ${msg.data.title} — ${(msg.data.score as number).toFixed(1)}`
   if (msg.event === 'scouts_done') return `${msg.data.signal_count} signals collected`
-  if (msg.event === 'batch_done') return `${msg.data.processed}/${msg.data.total} signals analyzed`
+  if (msg.event === 'batch_done') return `Analyzed ${msg.data.processed}/${msg.data.total} signals`
   if (msg.event === 'cycle_done') return `Cycle complete — ${msg.data.new_opportunities} new opportunities`
-  if (msg.event === 'cycle_start') return 'Discovery cycle started'
+  if (msg.event === 'cycle_start') return msg.data.source ? `Import started: ${msg.data.source}` : 'Discovery cycle started'
   if (msg.event === 'cycle_error') return `Error: ${msg.data.error}`
+  if (msg.event === 'rerate_start') return `Re-rating ${msg.data.total} opportunities…`
+  if (msg.event === 'rerate_progress') return `Re-rated: ${msg.data.title} → ${msg.data.type}`
+  if (msg.event === 'rerate_done') return `Re-rating complete — ${msg.data.total} opportunities updated`
+  if (msg.event === 'rerate_error') return `Re-rate error: ${msg.data.error}`
   return ''
 }
 

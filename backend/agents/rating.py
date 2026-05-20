@@ -56,19 +56,19 @@ Scoring rubric (0-100 each):
 
 CLASSIFICATION — this is a binary judgment, not a score threshold. Apply it carefully:
 
-MOONSHOT (rare — fewer than 1 in 10 opportunities qualify):
+MOONSHOT (uncommon — roughly 1 in 8 to 1 in 10 opportunities qualify):
   A Moonshot is a once-in-a-decade market opportunity. If it succeeds, it does not just
   build a business — it fundamentally restructures how an entire industry operates.
   Think: Uber reimagined transportation, Stripe rebuilt payments infrastructure,
   Airbnb redefined hospitality, SpaceX reinvented launch.
 
   ALL of the following must be true to label something a Moonshot:
-  1. TAM is $10B+ AND the market is structurally broken or ripe for platform displacement
-  2. The pain is industry-wide and systemic — not a segment or workflow problem
+  1. TAM is $10B+ AND the market is ripe for platform-level disruption or displacement
+  2. The pain is industry-wide and systemic — not a niche segment or incremental workflow improvement
   3. The solution requires (or enables) a genuine behavioral or technological shift
      at scale — not just a better UI on existing workflows
-  4. If it works, the winner could realistically reach $1B+ valuation (unicorn) and
-     potentially $100B+ (hectacorn) by owning the new category
+  4. If it works, the winner could realistically reach $1B+ valuation (unicorn) by
+     owning a new category — not merely growing an existing one
   5. There is a credible path to network effects, platform lock-in, or
      defensible infrastructure that prevents easy replication
 

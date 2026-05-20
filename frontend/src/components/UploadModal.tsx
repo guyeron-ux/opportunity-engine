@@ -1,4 +1,4 @@
-import { useState, useRef, DragEvent } from 'react'
+import { useState, useRef, DragEvent, useEffect } from 'react'
 import { api } from '../api'
 
 interface Props {
@@ -10,7 +10,12 @@ export function UploadModal({ onClose }: Props) {
   const [dragging, setDragging] = useState(false)
   const [status, setStatus] = useState<'idle' | 'uploading' | 'done' | 'error'>('idle')
   const [message, setMessage] = useState('')
+  const [imports, setImports] = useState<Array<{ id: string; filename: string; imported_at: string; signals_extracted: number; opportunities_added: number }>>([])
   const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    api.getImports().then(setImports).catch(() => {})
+  }, [])
 
   function accept(f: File) {
     const ext = f.name.split('.').pop()?.toLowerCase()
@@ -110,6 +115,26 @@ export function UploadModal({ onClose }: Props) {
               {status === 'uploading' ? '⏳ Processing…' : status === 'done' ? '✓ Started' : 'Run Analysis'}
             </button>
           </div>
+
+          {imports.length > 0 && (
+            <div className="pt-2 border-t border-gray-800">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Import History</h3>
+              <div className="space-y-1 max-h-36 overflow-y-auto">
+                {[...imports].reverse().map(imp => (
+                  <div key={imp.id} className="flex items-center justify-between text-xs py-1">
+                    <div className="min-w-0">
+                      <span className="text-gray-300 truncate block">{imp.filename}</span>
+                      <span className="text-gray-600">{new Date(imp.imported_at).toLocaleString()}</span>
+                    </div>
+                    <div className="text-gray-500 text-right shrink-0 ml-3">
+                      <div>{imp.signals_extracted} signals</div>
+                      <div>{imp.opportunities_added} added</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

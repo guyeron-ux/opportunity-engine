@@ -90,6 +90,7 @@ export const api = {
     req('/settings', { method: 'PATCH', body: JSON.stringify(patch) }),
   triggerCycle: () => req<{ ok: boolean; message: string }>('/cycle/run', { method: 'POST' }),
   getCycleStatus: () => req<CycleStatus>('/cycle/status'),
+  getImports: () => req<Array<{ id: string; filename: string; imported_at: string; signals_extracted: number; opportunities_added: number }>>('/imports'),
   rerateAll: () => req<{ ok: boolean; message: string }>('/opportunities/rerate', { method: 'POST' }),
   uploadFile: async (file: File): Promise<{ ok: boolean; message: string }> => {
     const form = new FormData()

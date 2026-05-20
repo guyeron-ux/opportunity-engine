@@ -72,9 +72,18 @@ class OpportunityEntry(BaseModel):
     cycle_id: str = ""
 
 
+class ImportRecord(BaseModel):
+    id: str
+    filename: str
+    imported_at: datetime = Field(default_factory=datetime.utcnow)
+    signals_extracted: int = 0
+    opportunities_added: int = 0
+
+
 class DatabaseModel(BaseModel):
     opportunities: list[OpportunityEntry] = []
     archived_opportunities: list[OpportunityEntry] = []
+    imports: list[ImportRecord] = []
     settings: dict = Field(default_factory=lambda: {
         "score_threshold": 70,
         "cycle_running": False,

@@ -21,9 +21,11 @@ class AnalystAgent(BaseAgent):
         super().__init__("analyst")
 
     def analyze(self, signal: dict) -> dict:
-        title = signal.get("title", "Unknown opportunity")
-        pain_point = signal.get("pain_point", "")
-        segment = signal.get("affected_segment", "")
+        raw_title = signal.get("title", "")
+        _generic = {"unknown", "unknown opportunity", "untitled", ""}
+        title = raw_title if raw_title.lower() not in _generic else signal.get("pain_point_summary", raw_title)[:80]
+        pain_point = signal.get("pain_point", signal.get("pain_point_summary", ""))
+        segment = signal.get("affected_segment", signal.get("market", ""))
         self._log.info("Analyst: analyzing '%s'", title)
 
         # Step 1: Validate pain point
@@ -81,7 +83,7 @@ MONETIZATION:
 
 Now synthesize this into a structured analysis. Return a JSON object:
 {{
-  "title": "refined opportunity title",
+  "title": "specific, descriptive opportunity name (NEVER 'Unknown' — always derive from research)",
   "pain_point_summary": "3-5 sentence summary of the validated pain point",
   "affected_segments": ["segment1", "segment2"],
   "market_size_estimate": "e.g. $2.3B TAM",

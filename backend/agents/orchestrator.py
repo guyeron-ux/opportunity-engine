@@ -259,6 +259,7 @@ class Orchestrator:
 
             summary = self._generate_summary(new_opps)
             update_db_settings({"cycle_running": False, "last_cycle_summary": summary})
+            self._save_import_record(filename, len(signals), len(new_opps))
             await self._broadcast("cycle_done", {
                 "new_opportunities": len(new_opps),
                 "summary": summary,
@@ -270,6 +271,19 @@ class Orchestrator:
             await self._broadcast("cycle_error", {"error": str(e)})
         finally:
             self._cycle_running = False
+
+    def _save_import_record(self, filename: str, signals: int, added: int):
+        from backend.models.database import load_db, save_db
+        from backend.models.opportunity import ImportRecord
+        db = load_db()
+        record = ImportRecord(
+            id=f"IMP-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
+            filename=filename,
+            signals_extracted=signals,
+            opportunities_added=added,
+        )
+        db.imports.append(record)
+        save_db(db)
 
     def _extract_signals_from_text(self, text: str) -> list[dict]:
         prompt = f"""Extract startup opportunity signals from the following text.

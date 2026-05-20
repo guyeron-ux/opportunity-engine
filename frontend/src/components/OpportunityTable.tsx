@@ -58,6 +58,7 @@ export function OpportunityTable({ opportunities, onSelect, loading }: Props) {
             <th className="py-3 px-4 w-20">Score</th>
             <th className="py-3 px-4 w-28">Type</th>
             <th className="py-3 px-4 w-32">Industry</th>
+            <th className="py-3 px-4 w-24">Added</th>
             <th className="py-3 px-4">Tags</th>
           </tr>
         </thead>
@@ -82,6 +83,9 @@ export function OpportunityTable({ opportunities, onSelect, loading }: Props) {
                 <TypeBadge type={opp.classification.type} />
               </td>
               <td className="py-3 px-4 text-gray-400 text-xs">{opp.classification.industry}</td>
+              <td className="py-3 px-4 text-gray-500 text-xs whitespace-nowrap">
+                {new Date(opp.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+              </td>
               <td className="py-3 px-4">
                 <div className="flex flex-wrap gap-1">
                   {opp.classification.tags.slice(0, 3).map((tag) => (
