@@ -23,8 +23,6 @@ class Orchestrator:
         self._cycle_running = False
         self._analyst = AnalystAgent()
         self._rater = RatingAgent()
-        # If the server just started, any "cycle_running" flag in the DB is stale — clear it
-        update_db_settings({"cycle_running": False})
 
     async def _broadcast(self, event: str, data: dict):
         if self.ws_manager:
