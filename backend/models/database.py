@@ -141,8 +141,9 @@ def get_opportunities(
     db = load_db()
     opps = [o for o in db.opportunities if not o.user.archived]
 
-    effective_threshold = threshold if threshold is not None else settings.score_threshold
-    opps = [o for o in opps if o.composite_score >= effective_threshold]
+    # Threshold is an optional caller-supplied filter only — never hide by default
+    if threshold is not None:
+        opps = [o for o in opps if o.composite_score >= threshold]
 
     if filters:
         if filters.get("types"):
