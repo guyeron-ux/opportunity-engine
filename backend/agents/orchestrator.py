@@ -23,6 +23,8 @@ class Orchestrator:
         self._cycle_running = False
         self._analyst = AnalystAgent()
         self._rater = RatingAgent()
+        # If the server just started, any "cycle_running" flag in the DB is stale — clear it
+        update_db_settings({"cycle_running": False})
 
     async def _broadcast(self, event: str, data: dict):
         if self.ws_manager:
@@ -468,9 +470,6 @@ TEXT:
 
     def get_status(self) -> dict:
         db_settings = get_db_settings()
-        # If the DB flag was manually cleared, honour it and reset in-memory state
-        if self._cycle_running and not db_settings.get("cycle_running"):
-            self._cycle_running = False
         return {
             "cycle_running": self._cycle_running,
             "last_run": db_settings.get("last_cycle_run"),
