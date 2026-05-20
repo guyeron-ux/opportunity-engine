@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import type { Opportunity } from '../api'
 import { api } from '../api'
 import { ScoreBar } from './ScoreBar'
@@ -21,6 +21,26 @@ const FACTORS: Array<{ key: keyof Opportunity['ratings']; label: string; weight:
 export function OpportunityDetail({ opp, onClose, onUpdate }: Props) {
   const [notes, setNotes] = useState(opp.user.notes || '')
   const [saving, setSaving] = useState(false)
+  const [editingTitle, setEditingTitle] = useState(false)
+  const [titleDraft, setTitleDraft] = useState(opp.title)
+  const titleInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (editingTitle) titleInputRef.current?.focus()
+  }, [editingTitle])
+
+  async function saveTitle() {
+    const trimmed = titleDraft.trim()
+    if (!trimmed || trimmed === opp.title) { setEditingTitle(false); return }
+    await api.patchOpportunity(opp.id, { title: trimmed })
+    setEditingTitle(false)
+    onUpdate()
+  }
+
+  function onTitleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Enter') saveTitle()
+    if (e.key === 'Escape') { setTitleDraft(opp.title); setEditingTitle(false) }
+  }
 
   async function saveNotes() {
     setSaving(true)
@@ -46,7 +66,25 @@ export function OpportunityDetail({ opp, onClose, onUpdate }: Props) {
         {/* Header */}
         <div className="sticky top-0 bg-gray-900 border-b border-gray-800 px-6 py-4 flex items-center gap-3">
           <div className="flex-1 min-w-0">
-            <h2 className="text-lg font-bold truncate">{opp.title}</h2>
+            {editingTitle ? (
+              <input
+                ref={titleInputRef}
+                value={titleDraft}
+                onChange={e => setTitleDraft(e.target.value)}
+                onBlur={saveTitle}
+                onKeyDown={onTitleKeyDown}
+                className="w-full bg-gray-800 border border-violet-500 rounded px-2 py-1 text-base font-bold text-white outline-none"
+              />
+            ) : (
+              <h2
+                className="text-lg font-bold truncate cursor-text hover:text-violet-300 transition-colors"
+                title="Click to rename"
+                onClick={() => setEditingTitle(true)}
+              >
+                {titleDraft}
+                <span className="ml-1.5 text-xs text-gray-600 font-normal">✎</span>
+              </h2>
+            )}
             <div className="flex items-center gap-2 mt-1">
               <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
                 opp.classification.type === 'Moonshot'

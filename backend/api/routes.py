@@ -90,6 +90,22 @@ def annotate_opportunity(opp_id: str, body: AnnotateRequest):
     return {"ok": True}
 
 
+class PatchRequest(BaseModel):
+    title: Optional[str] = None
+    notes: Optional[str] = None
+
+
+@router.patch("/opportunities/{opp_id}")
+def patch_opportunity(opp_id: str, body: PatchRequest):
+    patch = {k: v for k, v in body.model_dump().items() if v is not None}
+    if not patch:
+        raise HTTPException(400, "Nothing to update")
+    result = update_opportunity(opp_id, patch)
+    if not result:
+        raise HTTPException(404, f"Opportunity {opp_id} not found")
+    return result
+
+
 @router.post("/opportunities/{opp_id}/archive")
 def archive_opp(opp_id: str):
     success = archive_opportunity(opp_id)

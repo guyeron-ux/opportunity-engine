@@ -83,6 +83,8 @@ export const api = {
   getOpportunity: (id: string) => req<Opportunity>(`/opportunities/${id}`),
   annotate: (id: string, notes: string) =>
     req(`/opportunities/${id}/annotate`, { method: 'POST', body: JSON.stringify({ notes }) }),
+  patchOpportunity: (id: string, patch: { title?: string; notes?: string }) =>
+    req<Opportunity>(`/opportunities/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
   archive: (id: string) => req(`/opportunities/${id}/archive`, { method: 'POST' }),
   requestInfo: (id: string) => req(`/opportunities/${id}/request-info`, { method: 'POST' }),
   getSettings: () => req<Record<string, unknown>>('/settings'),
