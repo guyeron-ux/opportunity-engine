@@ -44,12 +44,19 @@ export interface ResearchData {
   signal_sources: string[]
 }
 
+export interface ChatMessage {
+  role: 'user' | 'assistant'
+  content: string
+  created_at: string
+}
+
 export interface UserInteraction {
   notes: string
   archived: boolean
   archived_at: string | null
   deeper_research_requested: boolean
   last_viewed: string | null
+  chat: ChatMessage[]
 }
 
 export interface Opportunity {
@@ -99,6 +106,49 @@ export const api = {
   getCycleStatus: () => req<CycleStatus>('/cycle/status'),
   getImports: () => req<Array<{ id: string; filename: string; imported_at: string; signals_extracted: number; opportunities_added: number }>>('/imports'),
   rerateAll: () => req<{ ok: boolean; message: string }>('/opportunities/rerate', { method: 'POST' }),
+  chat: async (
+    id: string,
+    message: string,
+    onChunk: (s: string) => void,
+  ): Promise<Array<{ type: string; data?: Record<string, unknown> }>> => {
+    const res = await fetch(BASE + `/opportunities/${id}/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message }),
+    })
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+    const reader = res.body!.getReader()
+    const decoder = new TextDecoder()
+    let actions: Array<{ type: string; data?: Record<string, unknown> }> = []
+    let buffer = ''
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() ?? ''
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue
+        try {
+          const payload = JSON.parse(line.slice(6))
+          if (payload.chunk) onChunk(payload.chunk)
+          if (payload.done) actions = payload.actions ?? []
+        } catch {
+          // ignore parse errors
+        }
+      }
+    }
+    return actions
+  },
+  rerateOne: (id: string) =>
+    req<{ ok: boolean }>(`/opportunities/${id}/rerate`, { method: 'POST' }),
+  clearChat: (id: string) =>
+    req<{ ok: boolean }>(`/opportunities/${id}/chat`, { method: 'DELETE' }),
+  deepResearch: (id: string, task: string) =>
+    req<{ ok: boolean }>(`/opportunities/${id}/deep-research`, {
+      method: 'POST',
+      body: JSON.stringify({ task }),
+    }),
   uploadFile: async (file: File): Promise<{ ok: boolean; message: string }> => {
     const form = new FormData()
     form.append('file', file)

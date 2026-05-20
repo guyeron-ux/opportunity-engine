@@ -225,6 +225,122 @@ class Orchestrator:
             "raw_signals": opp.research.raw_signals,
         }
 
+    # --- Single-opportunity rerate ---
+
+    def rerate_one(self, opp_id: str):
+        asyncio.run(self._async_rerate_one(opp_id))
+
+    async def _async_rerate_one(self, opp_id: str):
+        from backend.models.database import load_db, save_db
+        try:
+            db = load_db()
+            opp = next((o for o in db.opportunities if o.id == opp_id), None)
+            if not opp:
+                log.warning("rerate_one: opportunity %s not found", opp_id)
+                return
+
+            report = self._opp_to_report(opp)
+            loop = asyncio.get_event_loop()
+            new_rating = await loop.run_in_executor(None, self._rater.rate, report)
+            if new_rating:
+                opp.ratings = new_rating.ratings
+                opp.composite_score = new_rating.composite_score
+                opp.classification = new_rating.classification
+                opp.updated_at = datetime.utcnow()
+
+                if _is_pure_b2g(opp):
+                    log.info("rerate_one: archiving pure B2G '%s'", opp.title)
+                    opp.user.archived = True
+                    opp.user.archived_at = datetime.utcnow()
+                    db.archived_opportunities.append(opp)
+                    db.opportunities.remove(opp)
+
+                db.opportunities.sort(key=lambda o: o.composite_score, reverse=True)
+                save_db(db)
+                await self._broadcast("opportunity_updated", {
+                    "id": opp_id,
+                    "score": opp.composite_score,
+                    "type": opp.classification.type,
+                    "go_to_market": opp.classification.go_to_market,
+                })
+                log.info("rerate_one: completed for '%s' → %.1f", opp.title, opp.composite_score)
+        except Exception as e:
+            log.error("rerate_one error for %s: %s", opp_id, e, exc_info=True)
+
+    # --- Deep research on a single opportunity ---
+
+    def deep_research_one(self, opp_id: str, task: str):
+        asyncio.run(self._async_deep_research_one(opp_id, task))
+
+    async def _async_deep_research_one(self, opp_id: str, task: str):
+        from backend.models.database import load_db, save_db
+        try:
+            db = load_db()
+            opp = next((o for o in db.opportunities if o.id == opp_id), None)
+            if not opp:
+                log.warning("deep_research_one: opportunity %s not found", opp_id)
+                return
+
+            log.info("deep_research_one: starting for '%s', task='%s'", opp.title, task)
+            signal = self._opp_to_report(opp)
+
+            loop = asyncio.get_event_loop()
+            report = await loop.run_in_executor(
+                None, self._analyst.analyze, signal, task
+            )
+
+            # Merge new research into existing opportunity
+            opp.research.pain_point_summary = report.get("pain_point_summary", opp.research.pain_point_summary)
+            opp.research.affected_segments = report.get("affected_segments", opp.research.affected_segments)
+            if report.get("market_size_estimate"):
+                opp.research.market_size_estimate = report["market_size_estimate"]
+            if report.get("solution_tam_estimate"):
+                opp.research.solution_tam_estimate = report["solution_tam_estimate"]
+            if report.get("tam_derivation"):
+                opp.research.tam_derivation = report["tam_derivation"]
+            if report.get("market_growth_rate"):
+                opp.research.market_growth_rate = report["market_growth_rate"]
+            # Append new competitors not already present
+            existing_names = {c.get("name", "").lower() for c in opp.research.competitors}
+            for comp in report.get("competitors", []):
+                if comp.get("name", "").lower() not in existing_names:
+                    opp.research.competitors.append(comp)
+            # Append new monetization models
+            existing_models = set(opp.research.monetization_models)
+            for model in report.get("monetization_models", []):
+                if model not in existing_models:
+                    opp.research.monetization_models.append(model)
+                    existing_models.add(model)
+            if report.get("solution_hypothesis"):
+                opp.research.solution_hypothesis = report["solution_hypothesis"]
+            # Append new sources
+            existing_sources = set(opp.research.sources)
+            for src in report.get("sources", []):
+                if src not in existing_sources:
+                    opp.research.sources.append(src)
+                    existing_sources.add(src)
+
+            # Re-rate
+            new_rating = await loop.run_in_executor(None, self._rater.rate, report)
+            if new_rating:
+                opp.ratings = new_rating.ratings
+                opp.composite_score = new_rating.composite_score
+                opp.classification = new_rating.classification
+
+            opp.updated_at = datetime.utcnow()
+            db.opportunities.sort(key=lambda o: o.composite_score, reverse=True)
+            save_db(db)
+
+            await self._broadcast("opportunity_updated", {
+                "id": opp_id,
+                "score": opp.composite_score,
+                "type": opp.classification.type,
+                "go_to_market": opp.classification.go_to_market,
+            })
+            log.info("deep_research_one: completed for '%s'", opp.title)
+        except Exception as e:
+            log.error("deep_research_one error for %s: %s", opp_id, e, exc_info=True)
+
     # --- Upload processing ---
 
     def process_upload(self, text: str, filename: str):

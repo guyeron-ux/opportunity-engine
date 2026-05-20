@@ -154,6 +154,17 @@ export default function App() {
         setLastEvent('')
         setTriggerError(`Re-rate error: ${msg.data.error}`)
         break
+      case 'opportunity_updated':
+        // Refresh list + re-fetch selected opp if it matches
+        refetch()
+        setSelected(prev => {
+          if (prev && prev.id === msg.data.id) {
+            // Trigger a fresh fetch of the selected opportunity
+            api.getOpportunity(prev.id).then(updated => setSelected(updated)).catch(() => {})
+          }
+          return prev
+        })
+        break
     }
   }, [refetch])
 

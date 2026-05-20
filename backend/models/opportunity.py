@@ -57,12 +57,19 @@ class ResearchData(BaseModel):
     raw_signals: list[dict] = []
 
 
+class ChatMessage(BaseModel):
+    role: str  # "user" | "assistant"
+    content: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 class UserInteraction(BaseModel):
     notes: str = ""
     archived: bool = False
     archived_at: Optional[datetime] = None
     deeper_research_requested: bool = False
     last_viewed: Optional[datetime] = None
+    chat: list[ChatMessage] = []
 
 
 class OpportunityEntry(BaseModel):

@@ -1,15 +1,18 @@
 from __future__ import annotations
 import asyncio
 import io
+import json
 import threading
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query, UploadFile, File
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from backend.models.database import (
     get_opportunities, archive_opportunity, update_opportunity,
     get_db_settings, update_db_settings, load_db,
+    get_opportunity_by_id, append_chat_messages, clear_chat,
 )
 from backend.models.opportunity import OpportunityEntry
 from backend.api.websocket import ws_manager
@@ -120,6 +123,84 @@ def request_info(opp_id: str):
     if not result:
         raise HTTPException(404, f"Opportunity {opp_id} not found")
     return {"ok": True, "queued": True}
+
+
+class ChatRequest(BaseModel):
+    message: str
+
+
+@router.post("/opportunities/{opp_id}/chat")
+def chat_opportunity(opp_id: str, body: ChatRequest):
+    from backend.agents.chat import ChatAgent
+    opp = get_opportunity_by_id(opp_id)
+    if not opp:
+        raise HTTPException(404, f"Opportunity {opp_id} not found")
+
+    agent = ChatAgent()
+
+    # Build message list from persisted chat history + new message
+    messages = [
+        {"role": msg.role, "content": msg.content}
+        for msg in opp.user.chat
+    ]
+    messages.append({"role": "user", "content": body.message})
+
+    def event_stream():
+        full_response = ""
+        try:
+            for chunk in agent.stream_chat(opp, messages):
+                full_response += chunk
+                yield f"data: {json.dumps({'chunk': chunk})}\n\n"
+
+            clean_text, actions = agent.parse_actions(full_response)
+            # Persist messages (clean version without action tags)
+            append_chat_messages(opp_id, body.message, clean_text)
+            yield f"data: {json.dumps({'done': True, 'actions': actions})}\n\n"
+        except Exception as e:
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "X-Accel-Buffering": "no",
+            "Cache-Control": "no-cache",
+        },
+    )
+
+
+@router.delete("/opportunities/{opp_id}/chat")
+def clear_chat_history(opp_id: str):
+    success = clear_chat(opp_id)
+    if not success:
+        raise HTTPException(404, f"Opportunity {opp_id} not found")
+    return {"ok": True}
+
+
+@router.post("/opportunities/{opp_id}/rerate")
+def rerate_one_opportunity(opp_id: str):
+    opp = get_opportunity_by_id(opp_id)
+    if not opp:
+        raise HTTPException(404, f"Opportunity {opp_id} not found")
+    orch = get_orchestrator()
+    thread = threading.Thread(target=orch.rerate_one, args=(opp_id,), daemon=True)
+    thread.start()
+    return {"ok": True}
+
+
+class DeepResearchRequest(BaseModel):
+    task: str
+
+
+@router.post("/opportunities/{opp_id}/deep-research")
+def deep_research_opportunity(opp_id: str, body: DeepResearchRequest):
+    opp = get_opportunity_by_id(opp_id)
+    if not opp:
+        raise HTTPException(404, f"Opportunity {opp_id} not found")
+    orch = get_orchestrator()
+    thread = threading.Thread(target=orch.deep_research_one, args=(opp_id, body.task), daemon=True)
+    thread.start()
+    return {"ok": True}
 
 
 @router.get("/settings")

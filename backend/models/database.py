@@ -185,6 +185,51 @@ def update_db_settings(patch: dict) -> dict:
     return db.settings
 
 
+def get_opportunity_by_id(opp_id: str) -> "OpportunityEntry | None":
+    """Direct lookup by ID — searches active, archived, and B2G opportunities."""
+    db = load_db()
+    for opp in db.opportunities:
+        if opp.id == opp_id:
+            return opp
+    for opp in db.archived_opportunities:
+        if opp.id == opp_id:
+            return opp
+    return None
+
+
+def append_chat_messages(opp_id: str, user_msg: str, assistant_msg: str) -> bool:
+    """Atomically append a user + assistant ChatMessage pair to an opportunity."""
+    from backend.models.opportunity import ChatMessage
+    db = load_db()
+    for opp in db.opportunities:
+        if opp.id == opp_id:
+            opp.user.chat.append(ChatMessage(role="user", content=user_msg))
+            opp.user.chat.append(ChatMessage(role="assistant", content=assistant_msg))
+            opp.updated_at = datetime.utcnow()
+            save_db(db)
+            return True
+    for opp in db.archived_opportunities:
+        if opp.id == opp_id:
+            opp.user.chat.append(ChatMessage(role="user", content=user_msg))
+            opp.user.chat.append(ChatMessage(role="assistant", content=assistant_msg))
+            opp.updated_at = datetime.utcnow()
+            save_db(db)
+            return True
+    return False
+
+
+def clear_chat(opp_id: str) -> bool:
+    """Clear all chat messages for an opportunity."""
+    db = load_db()
+    for opp in db.opportunities + db.archived_opportunities:
+        if opp.id == opp_id:
+            opp.user.chat = []
+            opp.updated_at = datetime.utcnow()
+            save_db(db)
+            return True
+    return False
+
+
 def generate_opportunity_id(db: DatabaseModel | None = None) -> str:
     if db is None:
         db = load_db()

@@ -68,6 +68,32 @@ class BaseAgent:
             self._log.error("LLM call failed: %s", e)
             raise
 
+    def _stream(
+        self,
+        messages: list[dict],
+        system: str = "",
+        temperature: float = 0.7,
+        max_tokens: int = 1500,
+    ):
+        """Stream LLM response, yielding text chunks."""
+        if system:
+            messages = [{"role": "system", "content": system}] + messages
+        try:
+            stream = self._llm.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                stream=True,
+            )
+            for chunk in stream:
+                delta = chunk.choices[0].delta.content
+                if delta:
+                    yield delta
+        except Exception as e:
+            self._log.error("LLM stream failed: %s", e)
+            raise
+
     def _call_json(
         self,
         messages: list[dict],

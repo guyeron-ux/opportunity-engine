@@ -20,7 +20,7 @@ class AnalystAgent(BaseAgent):
     def __init__(self):
         super().__init__("analyst")
 
-    def analyze(self, signal: dict) -> dict:
+    def analyze(self, signal: dict, extra_context: str = "") -> dict:
         raw_title = signal.get("title", "")
         _generic = {"unknown", "unknown opportunity", "untitled", ""}
         title = raw_title if raw_title.lower() not in _generic else signal.get("pain_point_summary", raw_title)[:80]
@@ -100,6 +100,9 @@ Now synthesize this into a structured analysis. Return a JSON object:
 }}
 
 Return valid JSON only, no markdown. Include at least 5 competitors and 2 monetization models."""
+
+        if extra_context:
+            synthesis_prompt += f"\n\nADDITIONAL RESEARCH FOCUS:\n{extra_context}"
 
         try:
             report = self._call_json(
