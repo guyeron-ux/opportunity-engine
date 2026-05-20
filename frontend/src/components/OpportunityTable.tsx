@@ -80,7 +80,14 @@ export function OpportunityTable({ opportunities, onSelect, loading }: Props) {
                 <ScoreBadge score={opp.composite_score} />
               </td>
               <td className="py-3 px-4">
-                <TypeBadge type={opp.classification.type} />
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <TypeBadge type={opp.classification.type} />
+                  {opp.classification.go_to_market && (
+                    <span className="text-xs px-1.5 py-0.5 rounded font-mono bg-gray-800 text-gray-400 border border-gray-700">
+                      {opp.classification.go_to_market}
+                    </span>
+                  )}
+                </div>
               </td>
               <td className="py-3 px-4 text-gray-400 text-xs">{opp.classification.industry}</td>
               <td className="py-3 px-4 text-gray-500 text-xs whitespace-nowrap">
@@ -113,9 +120,14 @@ export function OpportunityTable({ opportunities, onSelect, loading }: Props) {
                 <div className="font-semibold text-sm truncate">{opp.title}</div>
                 <div className="text-xs text-gray-500 mt-0.5">{opp.classification.industry}</div>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
                 <ScoreBadge score={opp.composite_score} />
                 <TypeBadge type={opp.classification.type} />
+                {opp.classification.go_to_market && (
+                  <span className="text-xs px-1.5 py-0.5 rounded font-mono bg-gray-800 text-gray-400 border border-gray-700">
+                    {opp.classification.go_to_market}
+                  </span>
+                )}
               </div>
             </div>
             <p className="text-xs text-gray-500 mt-2 line-clamp-2">{opp.research.pain_point_summary}</p>

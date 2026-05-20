@@ -134,12 +134,22 @@ def update_opportunity(opp_id: str, patch: dict) -> OpportunityEntry | None:
     return None
 
 
+def _is_pure_b2g(opp: OpportunityEntry) -> bool:
+    """Returns True only for pure B2G (primary customer is government).
+    Mixed (B2B/B2G, B2C/B2G) are kept — 'marginal' B2G is not filtered."""
+    gtm = opp.classification.go_to_market.strip().upper()
+    return gtm == "B2G"
+
+
 def get_opportunities(
     filters: dict | None = None,
     threshold: int | None = None,
 ) -> list[OpportunityEntry]:
     db = load_db()
     opps = [o for o in db.opportunities if not o.user.archived]
+
+    # Exclude pure B2G — marginal (mixed B2B/B2G, B2C/B2G) are kept
+    opps = [o for o in opps if not _is_pure_b2g(o)]
 
     # Threshold is an optional caller-supplied filter only — never hide by default
     if threshold is not None:

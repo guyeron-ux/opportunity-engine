@@ -169,6 +169,7 @@ Return a JSON object with these exact keys:
     "moonshot_justification": "If Moonshot: which of the 5 criteria are met and why. If Pragmatic: why it does NOT qualify as a Moonshot.",
     "category": "SaaS|Marketplace|API|Platform|Hardware|Consumer|Other",
     "industry": "main industry vertical",
+    "go_to_market": "who pays — B2B|B2C|B2G|B2B/B2C|B2B/B2G|B2C/B2G. B2G only when primary customer is government (federal/state/municipal). Use slash for mixed (B2B/B2G = sells to both businesses and govt).",
     "tech_stack": ["relevant tech"],
     "tags": ["3-5 descriptive tags"]
   }}
@@ -227,6 +228,7 @@ Return valid JSON only, no markdown."""
             moonshot_justification=cls_data.get("moonshot_justification", ""),
             category=cls_data.get("category", "SaaS"),
             industry=cls_data.get("industry", "Technology"),
+            go_to_market=cls_data.get("go_to_market", "B2B"),
             tech_stack=cls_data.get("tech_stack", []),
             tags=cls_data.get("tags", []),
         )

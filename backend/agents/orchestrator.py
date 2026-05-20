@@ -11,7 +11,7 @@ from backend.agents.analyst import AnalystAgent
 from backend.agents.rating import RatingAgent
 from backend.models.database import (
     add_opportunity, get_opportunities, archive_opportunity,
-    update_opportunity, get_db_settings, update_db_settings,
+    update_opportunity, get_db_settings, update_db_settings, _is_pure_b2g,
 )
 
 log = logging.getLogger("orchestrator")
@@ -125,14 +125,18 @@ class Orchestrator:
                 # Rating
                 opp = await loop.run_in_executor(None, self._rater.rate, report)
                 if opp:
-                    saved = add_opportunity(opp)
-                    results.append(saved)
-                    await self._broadcast("opportunity_added", {
-                        "id": opp.id,
-                        "title": opp.title,
-                        "score": opp.composite_score,
-                        "type": opp.classification.type,
-                    })
+                    if _is_pure_b2g(opp):
+                        log.info("Skipping pure B2G opportunity: '%s'", opp.title)
+                    else:
+                        saved = add_opportunity(opp)
+                        results.append(saved)
+                        await self._broadcast("opportunity_added", {
+                            "id": opp.id,
+                            "title": opp.title,
+                            "score": opp.composite_score,
+                            "type": opp.classification.type,
+                            "go_to_market": opp.classification.go_to_market,
+                        })
             except Exception as e:
                 log.error("Error processing signal '%s': %s", signal.get("title"), e)
         return results
@@ -168,6 +172,7 @@ class Orchestrator:
             log.info("Re-rating %d opportunities", len(opps))
 
             loop = asyncio.get_event_loop()
+            b2g_archived = 0
             for i, opp in enumerate(opps):
                 report = self._opp_to_report(opp)
                 new_rating = await loop.run_in_executor(None, self._rater.rate, report)
@@ -175,21 +180,29 @@ class Orchestrator:
                     opp.ratings = new_rating.ratings
                     opp.composite_score = new_rating.composite_score
                     opp.classification = new_rating.classification
-                    from datetime import datetime
                     opp.updated_at = datetime.utcnow()
+                    # Archive pure B2G opportunities
+                    if _is_pure_b2g(opp):
+                        log.info("Archiving pure B2G: '%s'", opp.title)
+                        opp.user.archived = True
+                        opp.user.archived_at = datetime.utcnow()
+                        db.archived_opportunities.append(opp)
+                        db.opportunities.remove(opp)
+                        b2g_archived += 1
                 await self._broadcast("rerate_progress", {
                     "done": i + 1,
                     "total": len(opps),
                     "title": opp.title,
                     "type": opp.classification.type,
                     "score": opp.composite_score,
+                    "go_to_market": opp.classification.go_to_market,
                 })
 
             db.opportunities.sort(key=lambda o: o.composite_score, reverse=True)
             update_db_settings({"cycle_running": False})
             save_db(db)
-            await self._broadcast("rerate_done", {"total": len(opps)})
-            log.info("Re-rating complete")
+            await self._broadcast("rerate_done", {"total": len(opps), "b2g_archived": b2g_archived})
+            log.info("Re-rating complete — %d B2G archived", b2g_archived)
         except Exception as e:
             log.error("Rerate error: %s", e, exc_info=True)
             update_db_settings({"cycle_running": False})
@@ -241,14 +254,18 @@ class Orchestrator:
                     report = await loop.run_in_executor(None, self._analyst.analyze, signal)
                     opp = await loop.run_in_executor(None, self._rater.rate, report)
                     if opp:
-                        saved = add_opportunity(opp)
-                        new_opps.append(saved)
-                        await self._broadcast("opportunity_added", {
-                            "id": opp.id,
-                            "title": opp.title,
-                            "score": opp.composite_score,
-                            "type": opp.classification.type,
-                        })
+                        if _is_pure_b2g(opp):
+                            log.info("Skipping pure B2G (upload): '%s'", opp.title)
+                        else:
+                            saved = add_opportunity(opp)
+                            new_opps.append(saved)
+                            await self._broadcast("opportunity_added", {
+                                "id": opp.id,
+                                "title": opp.title,
+                                "score": opp.composite_score,
+                                "type": opp.classification.type,
+                                "go_to_market": opp.classification.go_to_market,
+                            })
                 except Exception as e:
                     log.error("Error processing uploaded signal '%s': %s", signal.get("title"), e)
                 await self._broadcast("batch_done", {

@@ -85,7 +85,7 @@ export function OpportunityDetail({ opp, onClose, onUpdate }: Props) {
                 <span className="ml-1.5 text-xs text-gray-600 font-normal">✎</span>
               </h2>
             )}
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
               <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
                 opp.classification.type === 'Moonshot'
                   ? 'bg-violet-900 text-violet-300'
@@ -93,6 +93,11 @@ export function OpportunityDetail({ opp, onClose, onUpdate }: Props) {
               }`}>
                 {opp.classification.type}
               </span>
+              {opp.classification.go_to_market && (
+                <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-gray-800 text-gray-300 border border-gray-700">
+                  {opp.classification.go_to_market}
+                </span>
+              )}
               <span className="text-xs text-gray-500">{opp.classification.industry}</span>
               <span className="text-xs text-gray-500">·</span>
               <span className="text-xs text-gray-500">{opp.classification.category}</span>

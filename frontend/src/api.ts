@@ -25,6 +25,7 @@ export interface Classification {
   moonshot_justification: string
   category: string
   industry: string
+  go_to_market: string
   tech_stack: string[]
   tags: string[]
 }

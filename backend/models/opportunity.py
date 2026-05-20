@@ -37,6 +37,7 @@ class Classification(BaseModel):
     moonshot_justification: str = ""
     category: str = ""      # e.g. "SaaS", "Marketplace", "API"
     industry: str = ""
+    go_to_market: str = ""  # "B2B" | "B2C" | "B2G" | "B2B/B2C" | "B2B/B2G" | etc.
     tech_stack: list[str] = []
     tags: list[str] = []
 
