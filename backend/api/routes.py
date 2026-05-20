@@ -228,6 +228,15 @@ def cycle_status():
     return get_orchestrator().get_status()
 
 
+@router.post("/cycle/abort")
+def abort_cycle():
+    """Force-reset a stuck cycle. Clears both in-memory and DB flags."""
+    orch = get_orchestrator()
+    orch._cycle_running = False
+    update_db_settings({"cycle_running": False})
+    return {"ok": True}
+
+
 @router.post("/opportunities/rerate")
 def rerate_opportunities():
     orch = get_orchestrator()

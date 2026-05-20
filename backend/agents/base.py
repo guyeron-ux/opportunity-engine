@@ -16,6 +16,7 @@ class BaseAgent:
         self._llm = OpenAI(
             api_key=settings.llm_api_key,
             base_url=settings.llm_base_url,
+            timeout=90.0,  # fail fast rather than hang indefinitely
         )
         self._tavily = TavilyClient(api_key=settings.tavily_api_key) if settings.tavily_api_key else None
         self._log = self._setup_logger()

@@ -468,6 +468,9 @@ TEXT:
 
     def get_status(self) -> dict:
         db_settings = get_db_settings()
+        # If the DB flag was manually cleared, honour it and reset in-memory state
+        if self._cycle_running and not db_settings.get("cycle_running"):
+            self._cycle_running = False
         return {
             "cycle_running": self._cycle_running,
             "last_run": db_settings.get("last_cycle_run"),
