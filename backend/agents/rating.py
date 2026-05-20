@@ -57,29 +57,33 @@ Scoring rubric (0-100 each):
 CLASSIFICATION — this is a binary judgment, not a score threshold. Apply it carefully:
 
 MOONSHOT (uncommon — roughly 1 in 8 to 1 in 10 opportunities qualify):
-  A Moonshot is a once-in-a-decade market opportunity. If it succeeds, it does not just
-  build a business — it fundamentally restructures how an entire industry operates.
-  Think: Uber reimagined transportation, Stripe rebuilt payments infrastructure,
-  Airbnb redefined hospitality, SpaceX reinvented launch.
+  A Moonshot is an opportunity to build a category-defining, infrastructure-level company.
+  If it succeeds, the winner owns the platform or standard that an entire industry runs on.
 
-  ALL of the following must be true to label something a Moonshot:
-  1. TAM is $10B+ AND the market is ripe for platform-level disruption or displacement
-  2. The pain is industry-wide and systemic — not a niche segment or incremental workflow improvement
-  3. The solution requires (or enables) a genuine behavioral or technological shift
-     at scale — not just a better UI on existing workflows
-  4. If it works, the winner could realistically reach $1B+ valuation (unicorn) by
-     owning a new category — not merely growing an existing one
-  5. There is a credible path to network effects, platform lock-in, or
-     defensible infrastructure that prevents easy replication
+  Consumer examples: Uber (transportation OS), Stripe (payments infrastructure),
+  Airbnb (hospitality marketplace), Duolingo (language learning platform).
+  B2B/infra examples: Snowflake (data cloud), Twilio (comms infrastructure),
+  Palantir (enterprise intelligence), Hugging Face (AI model infrastructure).
 
-  When in doubt, do NOT classify as Moonshot. Reserve it for opportunities that
-  genuinely meet all five criteria above.
+  ALL of the following must be true:
+  1. TAM is $10B+ AND the market currently lacks a dominant platform or standard
+  2. The pain is significant and widespread — affecting a large portion of an industry
+     OR systemic within a major vertical (healthcare, finance, logistics, etc.).
+     Does NOT need to affect every person on earth — industry-scale suffices.
+  3. The solution creates a meaningful shift in HOW work is done or value is delivered —
+     not simply automating an existing step or adding a feature layer
+  4. A winning company could credibly reach $1B+ valuation by owning the new category
+  5. There is a credible path to network effects, proprietary data moats, platform
+     lock-in, or defensible infrastructure
 
-PRAGMATIC (the default for high-quality opportunities):
-  A solid, executable business opportunity. Clear market, proven demand, achievable
-  differentiation. An excellent candidate for a capital-efficient, profitable company
-  in the $10M–$500M revenue range. Important and worth building — just not
-  industry-restructuring.
+  When in doubt, lean Moonshot if 4 of 5 criteria are clearly met and the 5th is
+  plausible. Do NOT require certainty on all five — early-stage opportunities are
+  inherently uncertain.
+
+PRAGMATIC (the default for solid opportunities):
+  A clear, executable business with proven demand and achievable differentiation.
+  Strong candidate for a capital-efficient company in the $10M–$500M range.
+  Excellent and worth building — but not positioned to own an entire industry category.
 """
 
 
