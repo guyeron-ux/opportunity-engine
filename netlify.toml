@@ -5,6 +5,8 @@
 
 [build.environment]
   NODE_VERSION = "20"
+  VITE_API_URL = "https://opportunity-engine-z2qq.onrender.com"
+  VITE_WS_URL  = "wss://opportunity-engine-z2qq.onrender.com"
 
 # SPA fallback — all routes serve index.html
 [[redirects]]
