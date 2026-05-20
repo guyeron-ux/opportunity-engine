@@ -29,6 +29,10 @@ function TypeBadge({ type }: { type: string }) {
   )
 }
 
+function latestCycleId(opportunities: Opportunity[]): string {
+  return opportunities.reduce((max, o) => (o.cycle_id > max ? o.cycle_id : max), '')
+}
+
 export function OpportunityTable({ opportunities, onSelect, loading }: Props) {
   if (loading) {
     return (
@@ -47,6 +51,8 @@ export function OpportunityTable({ opportunities, onSelect, loading }: Props) {
     )
   }
 
+  const newestCycleId = latestCycleId(opportunities)
+
   return (
     <div className="flex-1 overflow-auto">
       {/* Desktop table */}
@@ -63,15 +69,28 @@ export function OpportunityTable({ opportunities, onSelect, loading }: Props) {
           </tr>
         </thead>
         <tbody>
-          {opportunities.map((opp, i) => (
+          {opportunities.map((opp, i) => {
+            const isNew = newestCycleId && opp.cycle_id === newestCycleId
+            return (
             <tr
               key={opp.id}
               onClick={() => onSelect(opp)}
-              className="border-b border-gray-800/50 hover:bg-gray-800/40 cursor-pointer transition-colors"
+              className={`border-b cursor-pointer transition-colors ${
+                isNew
+                  ? 'border-violet-900/40 bg-violet-950/25 hover:bg-violet-950/40'
+                  : 'border-gray-800/50 hover:bg-gray-800/40'
+              }`}
             >
               <td className="py-3 px-4 text-gray-600 font-mono">{i + 1}</td>
               <td className="py-3 px-4">
-                <div className="font-semibold text-gray-100 leading-tight">{opp.title}</div>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-gray-100 leading-tight">{opp.title}</span>
+                  {isNew && (
+                    <span className="shrink-0 text-xs font-semibold px-1.5 py-0.5 rounded-full bg-violet-800/60 text-violet-300 border border-violet-700/50">
+                      new
+                    </span>
+                  )}
+                </div>
                 <div className="text-xs text-gray-500 mt-0.5 line-clamp-1">
                   {opp.research.pain_point_summary}
                 </div>
@@ -103,21 +122,34 @@ export function OpportunityTable({ opportunities, onSelect, loading }: Props) {
                 </div>
               </td>
             </tr>
-          ))}
+          )})}
         </tbody>
       </table>
 
       {/* Mobile card list */}
       <div className="md:hidden space-y-2 p-2">
-        {opportunities.map((opp, i) => (
+        {opportunities.map((opp) => {
+          const isNew = newestCycleId && opp.cycle_id === newestCycleId
+          return (
           <div
             key={opp.id}
             onClick={() => onSelect(opp)}
-            className="bg-gray-800/60 rounded-xl p-4 cursor-pointer hover:bg-gray-800 transition-colors"
+            className={`rounded-xl p-4 cursor-pointer transition-colors ${
+              isNew
+                ? 'bg-violet-950/40 hover:bg-violet-950/60 border border-violet-900/40'
+                : 'bg-gray-800/60 hover:bg-gray-800'
+            }`}
           >
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <div className="font-semibold text-sm truncate">{opp.title}</div>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-sm truncate">{opp.title}</span>
+                  {isNew && (
+                    <span className="shrink-0 text-xs font-semibold px-1.5 py-0.5 rounded-full bg-violet-800/60 text-violet-300 border border-violet-700/50">
+                      new
+                    </span>
+                  )}
+                </div>
                 <div className="text-xs text-gray-500 mt-0.5">{opp.classification.industry}</div>
               </div>
               <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
@@ -132,7 +164,7 @@ export function OpportunityTable({ opportunities, onSelect, loading }: Props) {
             </div>
             <p className="text-xs text-gray-500 mt-2 line-clamp-2">{opp.research.pain_point_summary}</p>
           </div>
-        ))}
+        )})}
       </div>
     </div>
   )
