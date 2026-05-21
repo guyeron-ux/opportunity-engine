@@ -180,8 +180,8 @@ class Orchestrator:
                     report = self._opp_to_report(opp)
                     new_rating = await loop.run_in_executor(None, self._rater.rate, report)
                     if new_rating:
-                        opp.ratings = new_rating.ratings
-                        opp.composite_score = new_rating.composite_score
+                        # Scores only change when new research is introduced (full cycle / deep research).
+                        # Rerate refreshes classification metadata only — ratings stay frozen.
                         opp.classification = new_rating.classification
                         opp.updated_at = datetime.utcnow()
                         # Archive pure B2G opportunities
@@ -249,8 +249,7 @@ class Orchestrator:
             loop = asyncio.get_event_loop()
             new_rating = await loop.run_in_executor(None, self._rater.rate, report)
             if new_rating:
-                opp.ratings = new_rating.ratings
-                opp.composite_score = new_rating.composite_score
+                # Classification only — scores require new research to change
                 opp.classification = new_rating.classification
                 opp.updated_at = datetime.utcnow()
 
