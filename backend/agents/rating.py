@@ -228,7 +228,7 @@ Return valid JSON only, no markdown."""
             moonshot_justification=cls_data.get("moonshot_justification", ""),
             category=cls_data.get("category", "SaaS"),
             industry=cls_data.get("industry", "Technology"),
-            go_to_market=cls_data.get("go_to_market", "B2B"),
+            go_to_market=cls_data.get("go_to_market") or "B2B",
             tech_stack=cls_data.get("tech_stack", []),
             tags=cls_data.get("tags", []),
         )
