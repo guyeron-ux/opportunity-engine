@@ -192,6 +192,9 @@ class Orchestrator:
                             db.archived_opportunities.append(opp)
                             db.opportunities.remove(opp)
                             b2g_archived += 1
+                        # Save incrementally so progress survives interruptions
+                        db.opportunities.sort(key=lambda o: o.composite_score, reverse=True)
+                        save_db(db)
                 except Exception as e:
                     log.error("Rerate failed for '%s': %s", opp.title, e)
                 await self._broadcast("rerate_progress", {
@@ -203,9 +206,7 @@ class Orchestrator:
                     "go_to_market": opp.classification.go_to_market,
                 })
 
-            db.opportunities.sort(key=lambda o: o.composite_score, reverse=True)
             update_db_settings({"cycle_running": False})
-            save_db(db)
             await self._broadcast("rerate_done", {"total": len(opps), "b2g_archived": b2g_archived})
             log.info("Re-rating complete — %d B2G archived", b2g_archived)
         except Exception as e:
