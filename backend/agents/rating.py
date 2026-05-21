@@ -2,7 +2,7 @@ from __future__ import annotations
 from datetime import datetime
 from backend.agents.base import BaseAgent
 from backend.models.opportunity import (
-    OpportunityEntry, Ratings, RatingFactor, Classification, ResearchData
+    OpportunityEntry, Ratings, RatingFactor, Classification, ResearchData, DevilsAdvocate
 )
 from backend.models.database import generate_opportunity_id, load_db
 
@@ -108,6 +108,21 @@ PRAGMATIC (the default for solid opportunities):
   A clear, executable business with proven demand and achievable differentiation.
   Strong candidate for a capital-efficient company in the $10M–$500M range.
   Excellent and worth building — but not positioned to own an entire industry category.
+
+---
+
+SCORING CALIBRATION — apply consistently:
+The rubric improvements exist for accuracy, not systematic deflation. A genuinely strong
+opportunity — validated large TAM, urgent and widespread pain, identifiable competitive angle,
+proven monetization model — should composite in the upper 80s. Scores of 90+ are rare but valid.
+
+The competitive insight (CI) domain-specificity requirement raises the bar for that factor only.
+It does not drag all composites down. An opportunity with fragmented or legacy incumbents in its
+vertical, named explicitly, should CI-score 75–90.
+
+Scores below 50 composite reflect opportunities that are genuinely weak across multiple factors.
+Do NOT reflexively score conservatively — under-scoring strong opportunities is as inaccurate as
+over-scoring weak ones. Aim for calibrated realism, not conservative pessimism.
 """
 
 
@@ -185,6 +200,11 @@ Return a JSON object with these exact keys:
     "go_to_market": "who pays — B2B|B2C|B2G|B2B/B2C|B2B/B2G|B2C/B2G. B2G only when primary customer is government (federal/state/municipal). Use slash for mixed (B2B/B2G = sells to both businesses and govt).",
     "tech_stack": ["relevant tech"],
     "tags": ["3-5 descriptive tags"]
+  }},
+  "devils_advocate": {{
+    "bear_case": "2-3 sentence narrative of why this opportunity could fail or significantly underperform — be specific and ruthlessly honest",
+    "key_risks": ["specific risk 1 (market, competitive, technical, or regulatory)", "risk 2", "risk 3", "risk 4", "risk 5 (up to 5 total)"],
+    "biggest_threat": "the single most dangerous risk in one crisp sentence — what would most likely kill this company"
   }}
 }}
 
@@ -204,7 +224,7 @@ Return valid JSON only, no markdown."""
             scored = self._call_json(
                 [{"role": "user", "content": scoring_prompt}],
                 system=SYSTEM_PROMPT,
-                max_tokens=3000,
+                max_tokens=4000,
             )
         except Exception as e:
             self._log.error("Rating failed for '%s': %s", title, e)
@@ -267,6 +287,13 @@ Return valid JSON only, no markdown."""
             raw_signals=report.get("raw_signals", []),
         )
 
+        da_data = scored.get("devils_advocate", {})
+        devils_advocate = DevilsAdvocate(
+            bear_case=da_data.get("bear_case", ""),
+            key_risks=da_data.get("key_risks", []),
+            biggest_threat=da_data.get("biggest_threat", ""),
+        ) if da_data else None
+
         opp = OpportunityEntry(
             id=opp_id,
             title=title,
@@ -275,6 +302,7 @@ Return valid JSON only, no markdown."""
             classification=classification,
             research=research,
             cycle_id=datetime.utcnow().strftime("%Y%m%d"),
+            devils_advocate=devils_advocate,
         )
 
         self._log.info(

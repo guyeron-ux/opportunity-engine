@@ -57,6 +57,12 @@ class ResearchData(BaseModel):
     raw_signals: list[dict] = []
 
 
+class DevilsAdvocate(BaseModel):
+    bear_case: str = ""
+    key_risks: list[str] = []
+    biggest_threat: str = ""
+
+
 class ChatMessage(BaseModel):
     role: str  # "user" | "assistant"
     content: str
@@ -83,6 +89,7 @@ class OpportunityEntry(BaseModel):
     research: ResearchData = Field(default_factory=ResearchData)
     user: UserInteraction = Field(default_factory=UserInteraction)
     cycle_id: str = ""
+    devils_advocate: Optional[DevilsAdvocate] = None
 
 
 class ImportRecord(BaseModel):

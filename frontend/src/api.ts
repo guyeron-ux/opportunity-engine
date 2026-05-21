@@ -44,6 +44,12 @@ export interface ResearchData {
   signal_sources: string[]
 }
 
+export interface DevilsAdvocate {
+  bear_case: string
+  key_risks: string[]
+  biggest_threat: string
+}
+
 export interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
@@ -70,6 +76,7 @@ export interface Opportunity {
   research: ResearchData
   user: UserInteraction
   cycle_id: string
+  devils_advocate?: DevilsAdvocate
 }
 
 export interface CycleStatus {
@@ -106,6 +113,11 @@ export const api = {
   getCycleStatus: () => req<CycleStatus>('/cycle/status'),
   getImports: () => req<Array<{ id: string; filename: string; imported_at: string; signals_extracted: number; opportunities_added: number }>>('/imports'),
   rerateAll: () => req<{ ok: boolean; message: string }>('/opportunities/rerate', { method: 'POST' }),
+  rerateCalibrate: (threshold = 75) =>
+    req<{ ok: boolean; message: string }>('/opportunities/rerate-calibrate', {
+      method: 'POST',
+      body: JSON.stringify({ threshold }),
+    }),
   chat: async (
     id: string,
     message: string,

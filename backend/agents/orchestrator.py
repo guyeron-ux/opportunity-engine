@@ -272,6 +272,69 @@ class Orchestrator:
         except Exception as e:
             log.error("rerate_one error for %s: %s", opp_id, e, exc_info=True)
 
+    # --- Threshold-based full rescore (rubric calibration + devil's advocate) ---
+
+    def rerate_above_threshold(self, threshold: float):
+        if self._cycle_running:
+            return False
+        self._cycle_running = True
+        update_db_settings({"cycle_running": True})
+        asyncio.run(self._async_rerate_above_threshold(threshold))
+        return True
+
+    async def _async_rerate_above_threshold(self, threshold: float):
+        from backend.models.database import load_db, save_db
+        try:
+            db = load_db()
+            opps = [o for o in db.opportunities if o.composite_score >= threshold]
+            await self._broadcast("rerate_start", {"total": len(opps)})
+            log.info("Calibrated rerate: %d opportunities at score >= %.0f", len(opps), threshold)
+
+            loop = asyncio.get_event_loop()
+            for i, opp in enumerate(opps):
+                try:
+                    report = self._opp_to_report(opp)
+                    new_rating = await loop.run_in_executor(None, self._rater.rate, report)
+                    if new_rating:
+                        # Full rescore — intentional rubric recalibration
+                        opp.ratings = new_rating.ratings
+                        opp.composite_score = new_rating.composite_score
+                        opp.classification = new_rating.classification
+                        if new_rating.devils_advocate:
+                            opp.devils_advocate = new_rating.devils_advocate
+                        opp.updated_at = datetime.utcnow()
+
+                        if _is_pure_b2g(opp):
+                            log.info("Calibrated rerate: archiving pure B2G '%s'", opp.title)
+                            opp.user.archived = True
+                            opp.user.archived_at = datetime.utcnow()
+                            db.archived_opportunities.append(opp)
+                            db.opportunities.remove(opp)
+
+                        db.opportunities.sort(key=lambda o: o.composite_score, reverse=True)
+                        save_db(db)
+                except Exception as e:
+                    log.error("Calibrated rerate failed for '%s': %s", opp.title, e)
+
+                await self._broadcast("rerate_progress", {
+                    "done": i + 1,
+                    "total": len(opps),
+                    "title": opp.title,
+                    "type": opp.classification.type,
+                    "score": opp.composite_score,
+                    "go_to_market": opp.classification.go_to_market,
+                })
+
+            update_db_settings({"cycle_running": False})
+            await self._broadcast("rerate_done", {"total": len(opps), "b2g_archived": 0})
+            log.info("Calibrated rerate complete: %d opportunities processed", len(opps))
+        except Exception as e:
+            log.error("Calibrated rerate error: %s", e, exc_info=True)
+            update_db_settings({"cycle_running": False})
+            await self._broadcast("rerate_error", {"error": str(e)})
+        finally:
+            self._cycle_running = False
+
     # --- Single-opportunity rerate WITH chat context (scores can update) ---
 
     def rerate_one_with_context(self, opp_id: str, chat_context: list[dict]):

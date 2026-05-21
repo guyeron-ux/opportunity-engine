@@ -264,6 +264,20 @@ def rerate_opportunities():
     return {"ok": True, "message": "Re-rating started"}
 
 
+class RerateThresholdRequest(BaseModel):
+    threshold: float = 75.0
+
+
+@router.post("/opportunities/rerate-calibrate")
+def rerate_calibrate(body: RerateThresholdRequest):
+    orch = get_orchestrator()
+    if orch._cycle_running:
+        return {"ok": False, "message": "Cycle already running"}
+    thread = threading.Thread(target=orch.rerate_above_threshold, args=(body.threshold,), daemon=True)
+    thread.start()
+    return {"ok": True, "message": f"Calibrated rerate started for score >= {body.threshold}"}
+
+
 @router.get("/imports")
 def list_imports():
     return load_db().imports

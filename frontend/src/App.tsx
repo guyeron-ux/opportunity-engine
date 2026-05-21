@@ -6,6 +6,7 @@ import { FilterPanel } from './components/FilterPanel'
 import { NotificationPanel } from './components/NotificationPanel'
 import { CycleBanner } from './components/CycleBanner'
 import { UploadModal } from './components/UploadModal'
+import { SystemLogicModal } from './components/SystemLogicModal'
 import { useWebSocket, type WsMessage } from './hooks/useWebSocket'
 
 interface Filters {
@@ -68,6 +69,7 @@ export default function App() {
   const [lastEvent, setLastEvent] = useState('')
   const [triggerError, setTriggerError] = useState('')
   const [showUpload, setShowUpload] = useState(false)
+  const [showSystemLogic, setShowSystemLogic] = useState(false)
 
   // Shared WebSocket message bus — notifications + banner both consume this
   const wsNotifyRef = useRef<((msg: WsMessage) => void) | null>(null)
@@ -208,6 +210,23 @@ export default function App() {
     }
   }
 
+  async function triggerCalibrate() {
+    setTriggerError('')
+    try {
+      const res = await api.rerateCalibrate(75)
+      if (!res.ok) {
+        setTriggerError(res.message)
+      } else {
+        setCycleRunning(true)
+        setCycleStartedAt(new Date().toISOString())
+        setCycleStats({ signals: 0, scored: 0, total: 0 })
+        setLastEvent('Calibrating 75+ opportunities…')
+      }
+    } catch {
+      setTriggerError('Could not reach backend')
+    }
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
@@ -222,6 +241,13 @@ export default function App() {
             <span className="text-xs text-red-400">{triggerError}</span>
           )}
           <button
+            onClick={() => setShowSystemLogic(true)}
+            className="text-xs border border-gray-700 hover:border-gray-500 text-gray-500 hover:text-gray-300 px-2.5 py-2 rounded-lg transition-colors"
+            title="How the system works"
+          >
+            ?
+          </button>
+          <button
             onClick={() => setShowUpload(true)}
             disabled={cycleRunning}
             className="text-xs border border-gray-600 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed text-gray-300 px-3 py-2 rounded-lg transition-colors"
@@ -233,9 +259,17 @@ export default function App() {
             onClick={triggerRerate}
             disabled={cycleRunning}
             className="text-xs border border-gray-600 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed text-gray-300 px-3 py-2 rounded-lg transition-colors"
-            title="Re-score existing opportunities with updated rubric"
+            title="Refresh classification metadata only (scores stay frozen)"
           >
             ↻ Rerate
+          </button>
+          <button
+            onClick={triggerCalibrate}
+            disabled={cycleRunning}
+            className="text-xs border border-amber-700 hover:border-amber-500 disabled:opacity-40 disabled:cursor-not-allowed text-amber-400 hover:text-amber-300 px-3 py-2 rounded-lg transition-colors"
+            title="Full rescore of 75+ opportunities with latest rubric + Devil's Advocate"
+          >
+            ⚖ Calibrate 75+
           </button>
           <button
             onClick={triggerCycle}
@@ -289,6 +323,10 @@ export default function App() {
 
       {showUpload && (
         <UploadModal onClose={() => setShowUpload(false)} />
+      )}
+
+      {showSystemLogic && (
+        <SystemLogicModal onClose={() => setShowSystemLogic(false)} />
       )}
     </div>
   )

@@ -218,6 +218,32 @@ export function OpportunityDetail({ opp, onClose, onUpdate }: Props) {
             </section>
           )}
 
+          {/* Devil's Advocate */}
+          {opp.devils_advocate && opp.devils_advocate.bear_case && (
+            <section>
+              <h3 className="text-xs font-semibold text-amber-600 uppercase tracking-wider mb-2">Devil's Advocate</h3>
+              <div className="bg-amber-950/20 border border-amber-800/30 rounded-xl p-4 space-y-3">
+                <p className="text-sm text-gray-300 leading-relaxed">{opp.devils_advocate.bear_case}</p>
+                {opp.devils_advocate.biggest_threat && (
+                  <div className="flex gap-2">
+                    <span className="text-xs font-semibold text-amber-500 shrink-0 mt-0.5">Biggest threat:</span>
+                    <span className="text-xs text-gray-300">{opp.devils_advocate.biggest_threat}</span>
+                  </div>
+                )}
+                {opp.devils_advocate.key_risks.length > 0 && (
+                  <ul className="space-y-1.5">
+                    {opp.devils_advocate.key_risks.map((risk, i) => (
+                      <li key={i} className="flex gap-2 text-xs text-gray-400">
+                        <span className="text-amber-700 shrink-0">▲</span>
+                        {risk}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </section>
+          )}
+
           {/* Moonshot / Pragmatic justification */}
           {opp.classification.moonshot_justification && (
             <section>
