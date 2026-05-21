@@ -31,12 +31,13 @@ function formatTime(iso?: string): string {
 export function ChatPanel({ opp, onOppUpdated }: Props) {
   const [open, setOpen] = useState(true)
   const [messages, setMessages] = useState<DisplayMessage[]>(() =>
-    opp.user.chat.map(m => ({ role: m.role, content: m.content, created_at: m.created_at }))
+    (opp.user.chat ?? []).map(m => ({ role: m.role, content: m.content, created_at: m.created_at }))
   )
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState(false)
   const [streamingContent, setStreamingContent] = useState('')
   const [reratingId, setReratingId] = useState<string | null>(null)
+  const [confirmRerateIdx, setConfirmRerateIdx] = useState<number | null>(null)
   const [applyingEdit, setApplyingEdit] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const accRef = useRef('')
@@ -44,9 +45,9 @@ export function ChatPanel({ opp, onOppUpdated }: Props) {
   // Sync messages when opp chat history changes externally
   useEffect(() => {
     setMessages(
-      opp.user.chat.map(m => ({ role: m.role, content: m.content, created_at: m.created_at }))
+      (opp.user.chat ?? []).map(m => ({ role: m.role, content: m.content, created_at: m.created_at }))
     )
-  }, [opp.id, opp.user.chat.length])
+  }, [opp.id, opp.user.chat?.length])
 
   useEffect(() => {
     if (open) bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -85,10 +86,15 @@ export function ChatPanel({ opp, onOppUpdated }: Props) {
     }
   }
 
-  async function handleRerate(msgIndex: number) {
-    setReratingId(String(msgIndex))
+  async function confirmRerate() {
+    if (confirmRerateIdx === null) return
+    const idx = confirmRerateIdx
+    setConfirmRerateIdx(null)
+    setReratingId(String(idx))
     try {
-      await api.rerateOne(opp.id)
+      // Pass the full conversation as context — chat insights justify a full rescore
+      const chatContext = messages.map(m => ({ role: m.role, content: m.content }))
+      await api.rerateWithContext(opp.id, chatContext as import('../api').ChatMessage[])
       onOppUpdated()
     } finally {
       setReratingId(null)
@@ -166,27 +172,53 @@ export function ChatPanel({ opp, onOppUpdated }: Props) {
 
                 {/* Action buttons */}
                 {msg.role === 'assistant' && msg.actions && msg.actions.length > 0 && (
-                  <div className="flex gap-2 mt-1.5 flex-wrap">
-                    {msg.actions.map((action, ai) =>
-                      action.type === 'rerate' ? (
-                        <button
-                          key={ai}
-                          onClick={() => handleRerate(i)}
-                          disabled={reratingId !== null}
-                          className="text-xs bg-gray-700 hover:bg-violet-800 text-gray-300 hover:text-white px-2.5 py-1 rounded-lg transition-colors disabled:opacity-50"
-                        >
-                          {reratingId === String(i) ? '↻ Rerating…' : '↻ Rerate this opportunity'}
-                        </button>
-                      ) : action.type === 'edit' && action.data ? (
-                        <button
-                          key={ai}
-                          onClick={() => handleApplyEdit(i, action.data!)}
-                          disabled={applyingEdit !== null}
-                          className="text-xs bg-gray-700 hover:bg-cyan-800 text-gray-300 hover:text-white px-2.5 py-1 rounded-lg transition-colors disabled:opacity-50"
-                        >
-                          {applyingEdit === String(i) ? 'Applying…' : '✎ Apply suggested edit'}
-                        </button>
-                      ) : null
+                  <div className="flex flex-col gap-1.5 mt-1.5">
+                    <div className="flex gap-2 flex-wrap">
+                      {msg.actions.map((action, ai) =>
+                        action.type === 'rerate' ? (
+                          reratingId === String(i) ? (
+                            <span key={ai} className="text-xs text-gray-500 px-2.5 py-1">↻ Rerating…</span>
+                          ) : (
+                            <button
+                              key={ai}
+                              onClick={() => setConfirmRerateIdx(i)}
+                              disabled={reratingId !== null || confirmRerateIdx !== null}
+                              className="text-xs bg-gray-700 hover:bg-violet-800 text-gray-300 hover:text-white px-2.5 py-1 rounded-lg transition-colors disabled:opacity-50"
+                            >
+                              ↻ Rerate with these insights
+                            </button>
+                          )
+                        ) : action.type === 'edit' && action.data ? (
+                          <button
+                            key={ai}
+                            onClick={() => handleApplyEdit(i, action.data!)}
+                            disabled={applyingEdit !== null}
+                            className="text-xs bg-gray-700 hover:bg-cyan-800 text-gray-300 hover:text-white px-2.5 py-1 rounded-lg transition-colors disabled:opacity-50"
+                          >
+                            {applyingEdit === String(i) ? 'Applying…' : '✎ Apply suggested edit'}
+                          </button>
+                        ) : null
+                      )}
+                    </div>
+                    {/* Inline confirmation dialog */}
+                    {confirmRerateIdx === i && (
+                      <div className="bg-gray-900 border border-violet-700/50 rounded-lg px-3 py-2 text-xs text-gray-300 flex flex-col gap-1.5">
+                        <p>This will rescore using insights from this conversation. Scores may change.</p>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={confirmRerate}
+                            className="bg-violet-700 hover:bg-violet-600 text-white px-2.5 py-1 rounded-md transition-colors"
+                          >
+                            Confirm rerate
+                          </button>
+                          <button
+                            onClick={() => setConfirmRerateIdx(null)}
+                            className="text-gray-500 hover:text-gray-300 px-2.5 py-1 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
                     )}
                   </div>
                 )}

@@ -272,6 +272,64 @@ class Orchestrator:
         except Exception as e:
             log.error("rerate_one error for %s: %s", opp_id, e, exc_info=True)
 
+    # --- Single-opportunity rerate WITH chat context (scores can update) ---
+
+    def rerate_one_with_context(self, opp_id: str, chat_context: list[dict]):
+        asyncio.run(self._async_rerate_one_with_context(opp_id, chat_context))
+
+    async def _async_rerate_one_with_context(self, opp_id: str, chat_context: list[dict]):
+        from backend.models.database import load_db, save_db
+        try:
+            db = load_db()
+            opp = next((o for o in db.opportunities if o.id == opp_id), None)
+            if not opp:
+                log.warning("rerate_one_with_context: opportunity %s not found", opp_id)
+                return
+
+            # Build context string from the last 20 chat messages
+            chat_lines = []
+            for msg in chat_context[-20:]:
+                role = "User" if msg.get("role") == "user" else "Analyst"
+                chat_lines.append(f"{role}: {msg.get('content', '')}")
+            extra_context = (
+                "New insights from analyst conversation — incorporate into scoring:\n\n"
+                + "\n\n".join(chat_lines)
+            )
+
+            report = self._opp_to_report(opp)
+            report["extra_context"] = extra_context
+
+            loop = asyncio.get_event_loop()
+            new_rating = await loop.run_in_executor(None, self._rater.rate, report)
+            if new_rating:
+                # Chat insights = new information → full rescore (ratings + classification)
+                opp.ratings = new_rating.ratings
+                opp.composite_score = new_rating.composite_score
+                opp.classification = new_rating.classification
+                opp.updated_at = datetime.utcnow()
+
+                if _is_pure_b2g(opp):
+                    log.info("rerate_one_with_context: archiving pure B2G '%s'", opp.title)
+                    opp.user.archived = True
+                    opp.user.archived_at = datetime.utcnow()
+                    db.archived_opportunities.append(opp)
+                    db.opportunities.remove(opp)
+
+                db.opportunities.sort(key=lambda o: o.composite_score, reverse=True)
+                save_db(db)
+                await self._broadcast("opportunity_updated", {
+                    "id": opp_id,
+                    "score": opp.composite_score,
+                    "type": opp.classification.type,
+                    "go_to_market": opp.classification.go_to_market,
+                })
+                log.info(
+                    "rerate_one_with_context: completed for '%s' → %.1f",
+                    opp.title, opp.composite_score,
+                )
+        except Exception as e:
+            log.error("rerate_one_with_context error for %s: %s", opp_id, e, exc_info=True)
+
     # --- Deep research on a single opportunity ---
 
     def deep_research_one(self, opp_id: str, task: str):

@@ -44,11 +44,24 @@ Scoring rubric (0-100 each):
    0-49:   Vague or highly complex
 
 4. COMPETITIVE INSIGHT (CI) — weight 15%
-   90-100: Fragmented or sleeping-giant market — incumbents are legacy, slow, or mis-aligned.
-           A focused challenger can own a defensible position.
-   70-89:  Incumbent weaknesses clearly identified
-   50-69:  Competitive but with exploitable niches
-   0-49:   Dominant players with deep moats
+   Score based on the QUALITY of the competitive analysis, not just presence of names.
+
+   PREREQUISITE — Domain specificity check (apply FIRST):
+   If the competitor list contains only horizontal/generic tools (SAP ERP, Oracle, Salesforce,
+   Celonis, Monday.com, ServiceNow, Asana, generic BPM) without naming the actual domain-specific
+   vendors that serve this vertical, the analysis is SHALLOW. Such a list scores maximum 35
+   regardless of other factors — because it means the analyst missed the real competition.
+   Domain-specific examples: supply chain → Blue Yonder, Kinaxis, o9, Logility; logistics →
+   project44, FourKites, Transplace; manufacturing ops → Plex, Arena, Epicor; HR → Rippling,
+   Workday; proptech → Yardi, RealPage; legal → Clio, Relativity; etc.
+
+   90-100: Fragmented or sleeping-giant market — domain-specific incumbents are legacy, slow, or
+           mis-aligned. A focused challenger can own a defensible niche with clear rationale.
+   70-89:  Domain-specific incumbents named with clear weaknesses identified and exploitable angles
+   50-69:  Mix of domain and generic competitors; some actionable insight present
+   30-49:  Mostly generic tools cited; shallow analysis or dominant moats with no clear angle
+   0-29:   Pure generic tool list (Monday/Asana/SAP only) OR all incumbents have deep moats and
+           no differentiation path identified
 
 5. MONETIZATION POTENTIAL (MP) — weight 15%
    90-100: Proven models with strong unit economics signals — clear path to $100M+ ARR
@@ -182,6 +195,10 @@ excellent and executable. Only classify as Moonshot if ALL five criteria in the 
 prompt are clearly met.
 
 Return valid JSON only, no markdown."""
+
+        extra_context = report.get("extra_context", "")
+        if extra_context:
+            scoring_prompt += f"\n\n---\nADDITIONAL CONTEXT (use to improve scoring accuracy):\n{extra_context}"
 
         try:
             scored = self._call_json(

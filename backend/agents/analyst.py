@@ -36,9 +36,17 @@ class AnalystAgent(BaseAgent):
             f'"{pain_point[:60]}" problem complaints users 2025', max_results=3
         )
 
-        # Step 2: Competitive landscape
+        # Step 2: Competitive landscape — three complementary searches
         competitor_results = self.web_search(
-            f"{title} competitors alternatives solutions market 2025", max_results=6
+            f"{title} competitors alternatives solutions market 2025", max_results=5
+        )
+        # Domain-specific incumbents: search by segment/vertical, not title
+        domain_incumbents = self.web_search(
+            f"{segment} software vendors platforms market leaders enterprise 2025", max_results=5
+        )
+        # VC-funded startups in this exact space
+        funded_startups = self.web_search(
+            f"{segment} startup funding series venture capital 2023 2024 2025", max_results=4
         )
         competitor_gaps = self.web_search(
             f"{title} why existing solutions fail limitations 2025", max_results=3
@@ -73,7 +81,7 @@ PAIN POINT VALIDATION:
 {fmt(validation_results + corroboration)}
 
 COMPETITIVE LANDSCAPE:
-{fmt(competitor_results + competitor_gaps)}
+{fmt(competitor_results + domain_incumbents + funded_startups + competitor_gaps)}
 
 MARKET DATA:
 {fmt(market_results)}
@@ -98,6 +106,14 @@ Now synthesize this into a structured analysis. Return a JSON object:
   "sources": ["url1", "url2", "url3"],
   "signal_sources": ["original signal source urls"]
 }}
+
+CRITICAL REQUIREMENT on competitors:
+You MUST identify domain-specific software vendors — NOT generic enterprise tools.
+- Name the established incumbents that serve this exact vertical (supply chain → Blue Yonder/Kinaxis/o9; logistics → project44/FourKites; manufacturing ops → Plex/Arena/Epicor; HR tech → Workday/Rippling; etc.)
+- Name VC-funded or recently launched startups directly in this space
+- DO NOT list horizontal tools (Monday.com, Asana, Celonis, ServiceNow, Salesforce, generic ERP) as competitors unless they have a purpose-built product for this specific domain and buyer
+- For each competitor: state their market position (leader/challenger/niche), their specific weakness for this buyer, and the differentiation angle a focused startup could exploit
+- Minimum: 3 domain-specific incumbents + 2 funded startups
 
 Return valid JSON only, no markdown. Include at least 5 competitors and 2 monetization models."""
 

@@ -188,6 +188,23 @@ def rerate_one_opportunity(opp_id: str):
     return {"ok": True}
 
 
+class RerateWithContextRequest(BaseModel):
+    chat_context: list[dict] = []
+
+
+@router.post("/opportunities/{opp_id}/rerate-with-context")
+def rerate_one_with_context(opp_id: str, body: RerateWithContextRequest):
+    opp = get_opportunity_by_id(opp_id)
+    if not opp:
+        raise HTTPException(404, f"Opportunity {opp_id} not found")
+    orch = get_orchestrator()
+    thread = threading.Thread(
+        target=orch.rerate_one_with_context, args=(opp_id, body.chat_context), daemon=True
+    )
+    thread.start()
+    return {"ok": True}
+
+
 class DeepResearchRequest(BaseModel):
     task: str
 

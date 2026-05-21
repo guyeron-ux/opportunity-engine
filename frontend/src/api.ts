@@ -142,6 +142,11 @@ export const api = {
   },
   rerateOne: (id: string) =>
     req<{ ok: boolean }>(`/opportunities/${id}/rerate`, { method: 'POST' }),
+  rerateWithContext: (id: string, chatContext: ChatMessage[]) =>
+    req<{ ok: boolean }>(`/opportunities/${id}/rerate-with-context`, {
+      method: 'POST',
+      body: JSON.stringify({ chat_context: chatContext }),
+    }),
   clearChat: (id: string) =>
     req<{ ok: boolean }>(`/opportunities/${id}/chat`, { method: 'DELETE' }),
   deepResearch: (id: string, task: string) =>
