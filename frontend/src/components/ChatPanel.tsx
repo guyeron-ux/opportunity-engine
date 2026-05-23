@@ -37,10 +37,12 @@ export function ChatPanel({ opp, onOppUpdated }: Props) {
   const [streaming, setStreaming] = useState(false)
   const [streamingContent, setStreamingContent] = useState('')
   const [reratingId, setReratingId] = useState<string | null>(null)
+  const [reratingPending, setReratingPending] = useState(false)
   const [confirmRerateIdx, setConfirmRerateIdx] = useState<number | null>(null)
   const [applyingEdit, setApplyingEdit] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const accRef = useRef('')
+  const lastUpdatedAtRef = useRef(opp.updated_at)
 
   // Sync messages when opp chat history changes externally
   useEffect(() => {
@@ -48,6 +50,14 @@ export function ChatPanel({ opp, onOppUpdated }: Props) {
       (opp.user.chat ?? []).map(m => ({ role: m.role, content: m.content, created_at: m.created_at }))
     )
   }, [opp.id, opp.user.chat?.length])
+
+  // Clear reratingPending once the opportunity is refreshed with new data
+  useEffect(() => {
+    if (reratingPending && opp.updated_at !== lastUpdatedAtRef.current) {
+      setReratingPending(false)
+    }
+    lastUpdatedAtRef.current = opp.updated_at
+  }, [opp.updated_at, reratingPending])
 
   useEffect(() => {
     if (open) bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -92,10 +102,9 @@ export function ChatPanel({ opp, onOppUpdated }: Props) {
     setConfirmRerateIdx(null)
     setReratingId(String(idx))
     try {
-      // Pass the full conversation as context — chat insights justify a full rescore
       const chatContext = messages.map(m => ({ role: m.role, content: m.content }))
       await api.rerateWithContext(opp.id, chatContext as import('../api').ChatMessage[])
-      onOppUpdated()
+      setReratingPending(true)
     } finally {
       setReratingId(null)
     }
@@ -240,6 +249,14 @@ export function ChatPanel({ opp, onOppUpdated }: Props) {
 
             <div ref={bottomRef} />
           </div>
+
+          {/* Rerate-pending indicator */}
+          {reratingPending && (
+            <div className="flex items-center gap-2 text-xs text-violet-400 animate-pulse px-1 py-1">
+              <span className="inline-block animate-spin">↻</span>
+              Rescoring with conversation insights — scores will update when complete…
+            </div>
+          )}
 
           {/* Input */}
           <div className="flex gap-2 mt-1">

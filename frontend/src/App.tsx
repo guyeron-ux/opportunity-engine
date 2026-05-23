@@ -77,6 +77,8 @@ export default function App() {
   const [triggerError, setTriggerError] = useState('')
   const [showUpload, setShowUpload] = useState(false)
   const [showSystemLogic, setShowSystemLogic] = useState(false)
+  const [calibratingIds, setCalibratingIds] = useState<Set<string>>(new Set())
+  const [reratingIds, setReratingIds] = useState<Set<string>>(new Set())
 
   // Shared WebSocket message bus — notifications + banner both consume this
   const wsNotifyRef = useRef<((msg: WsMessage) => void) | null>(null)
@@ -168,17 +170,21 @@ export default function App() {
         setLastEvent('')
         setTriggerError(`Re-rate error: ${msg.data.error}`)
         break
-      case 'opportunity_updated':
+      case 'opportunity_updated': {
+        const updatedId = msg.data.id as string
+        // Clear from any pending operation tracking
+        setCalibratingIds(prev => { const n = new Set(prev); n.delete(updatedId); return n })
+        setReratingIds(prev => { const n = new Set(prev); n.delete(updatedId); return n })
         // Refresh list + re-fetch selected opp if it matches
         refetch()
         setSelected(prev => {
-          if (prev && prev.id === msg.data.id) {
-            // Trigger a fresh fetch of the selected opportunity
+          if (prev && prev.id === updatedId) {
             api.getOpportunity(prev.id).then(updated => setSelected(updated)).catch(() => {})
           }
           return prev
         })
         break
+      }
     }
   }, [refetch])
 
@@ -254,13 +260,17 @@ export default function App() {
   }
 
   async function handleBulkRerate() {
-    await Promise.all([...checkedIds].map(id => api.rerateOne(id).catch(() => {})))
+    const ids = [...checkedIds]
+    setReratingIds(prev => new Set([...prev, ...ids]))
     setCheckedIds(new Set())
+    await Promise.all(ids.map(id => api.rerateOne(id).catch(() => {})))
   }
 
   async function handleBulkCalibrate() {
-    await Promise.all([...checkedIds].map(id => api.calibrateOne(id).catch(() => {})))
+    const ids = [...checkedIds]
+    setCalibratingIds(prev => new Set([...prev, ...ids]))
     setCheckedIds(new Set())
+    await Promise.all(ids.map(id => api.calibrateOne(id).catch(() => {})))
   }
 
   function handleBulkExport(format: 'md' | 'pdf') {
@@ -331,6 +341,22 @@ export default function App() {
         stats={cycleStats}
         lastEvent={lastEvent}
       />
+
+      {/* Per-opp background operation indicator */}
+      {(calibratingIds.size > 0 || reratingIds.size > 0) && (
+        <div className="px-6 py-1.5 border-b border-gray-800 flex items-center gap-4 text-xs">
+          {calibratingIds.size > 0 && (
+            <span className="text-amber-400 animate-pulse">
+              ⚖ Calibrating {calibratingIds.size} opportunit{calibratingIds.size === 1 ? 'y' : 'ies'} in background…
+            </span>
+          )}
+          {reratingIds.size > 0 && (
+            <span className="text-cyan-400 animate-pulse">
+              ↻ Rerating {reratingIds.size} opportunit{reratingIds.size === 1 ? 'y' : 'ies'} in background…
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Body */}
       <div className="flex flex-1 overflow-hidden">
