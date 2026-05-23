@@ -39,7 +39,6 @@ export function ChatPanel({ opp, onOppUpdated }: Props) {
   const [reratingId, setReratingId] = useState<string | null>(null)
   const [reratingPending, setReratingPending] = useState(false)
   const [confirmRerateIdx, setConfirmRerateIdx] = useState<number | null>(null)
-  const [manualRerateOpen, setManualRerateOpen] = useState(false)
   const [applyingEdit, setApplyingEdit] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const accRef = useRef('')
@@ -97,18 +96,28 @@ export function ChatPanel({ opp, onOppUpdated }: Props) {
     }
   }
 
-  async function confirmRerate(fromManual = false) {
-    if (!fromManual && confirmRerateIdx === null) return
+  async function confirmRerate() {
+    if (confirmRerateIdx === null) return
     const idx = confirmRerateIdx
     setConfirmRerateIdx(null)
-    setManualRerateOpen(false)
-    if (idx !== null) setReratingId(String(idx))
+    setReratingId(String(idx))
     try {
       const chatContext = messages.map(m => ({ role: m.role, content: m.content }))
       await api.rerateWithContext(opp.id, chatContext as import('../api').ChatMessage[])
       setReratingPending(true)
     } finally {
       setReratingId(null)
+    }
+  }
+
+  async function manualRerate() {
+    if (reratingPending) return
+    setReratingPending(true)
+    try {
+      const chatContext = messages.map(m => ({ role: m.role, content: m.content }))
+      await api.rerateWithContext(opp.id, chatContext as import('../api').ChatMessage[])
+    } catch {
+      setReratingPending(false)
     }
   }
 
@@ -146,16 +155,18 @@ export function ChatPanel({ opp, onOppUpdated }: Props) {
         </button>
         {open && messages.length > 0 && (
           <div className="flex items-center gap-3">
-            {!reratingPending && (
-              <button
-                onClick={() => setManualRerateOpen(v => !v)}
-                disabled={reratingPending}
-                className="text-xs text-violet-500 hover:text-violet-300 transition-colors"
-                title="Rescore this opportunity using the full conversation as context"
-              >
-                ↻ Rerate with chat
-              </button>
-            )}
+            <button
+              onClick={manualRerate}
+              disabled={reratingPending || streaming}
+              className={`text-xs transition-colors disabled:opacity-50 ${
+                reratingPending
+                  ? 'text-violet-400 animate-pulse cursor-default'
+                  : 'text-violet-500 hover:text-violet-300'
+              }`}
+              title="Rescore this opportunity using the full conversation as context"
+            >
+              {reratingPending ? '↻ Rescoring…' : '↻ Rerate with chat'}
+            </button>
             <button
               onClick={handleClearChat}
               className="text-xs text-gray-600 hover:text-gray-400 transition-colors"
@@ -263,27 +274,6 @@ export function ChatPanel({ opp, onOppUpdated }: Props) {
 
             <div ref={bottomRef} />
           </div>
-
-          {/* Manual rerate confirmation */}
-          {manualRerateOpen && (
-            <div className="bg-gray-900 border border-violet-700/50 rounded-lg px-3 py-2 text-xs text-gray-300 flex flex-col gap-1.5">
-              <p>Rescore using the full conversation as context. Scores may change.</p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => confirmRerate(true)}
-                  className="bg-violet-700 hover:bg-violet-600 text-white px-2.5 py-1 rounded-md transition-colors"
-                >
-                  Confirm rerate
-                </button>
-                <button
-                  onClick={() => setManualRerateOpen(false)}
-                  className="text-gray-500 hover:text-gray-300 px-2.5 py-1 transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )}
 
           {/* Rerate-pending indicator */}
           {reratingPending && (
