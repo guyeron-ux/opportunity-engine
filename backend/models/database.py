@@ -1,6 +1,7 @@
 from __future__ import annotations
 import json
 import logging
+import re
 from datetime import datetime, date
 from filelock import FileLock
 
@@ -11,6 +12,41 @@ log = logging.getLogger("database")
 
 _LOCK_PATH = str(settings.opportunities_file) + ".lock"
 _REDIS_KEY = "opportunity_engine_db"
+
+# ---------------------------------------------------------------------------
+# Fuzzy duplicate detection
+# ---------------------------------------------------------------------------
+
+# Words stripped before similarity comparison — AI buzzword prefixes and
+# generic product-type nouns that don't differentiate one opportunity from another
+_STOP: frozenset[str] = frozenset({
+    # Articles / prepositions
+    'a', 'an', 'the', 'for', 'and', 'of', 'in', 'with', 'by', 'on', 'to',
+    'at', 'from', 'via', 'into',
+    # AI prefix words universally prepended in this space
+    'ai', 'powered', 'native', 'driven', 'augmented', 'intelligent', 'smart',
+    'automated', 'autonomous',
+    # Generic product-type nouns that don't differentiate
+    'platform', 'system', 'solution', 'tool', 'suite', 'software', 'app',
+})
+
+# Two opportunities are considered duplicates when their normalized title
+# token sets share this fraction of words (Jaccard similarity)
+DUPLICATE_THRESHOLD = 0.65
+
+
+def _normalize_title(title: str) -> frozenset[str]:
+    title = title.lower()
+    title = re.sub(r'[^a-z0-9\s]', ' ', title)
+    return frozenset(t for t in title.split() if t not in _STOP and len(t) > 2)
+
+
+def _title_similarity(a: str, b: str) -> float:
+    ta, tb = _normalize_title(a), _normalize_title(b)
+    if not ta or not tb:
+        return 0.0
+    union = len(ta | tb)
+    return len(ta & tb) / union if union else 0.0
 
 
 # ---------------------------------------------------------------------------
@@ -97,9 +133,27 @@ def save_db(db: DatabaseModel) -> None:
 
 def add_opportunity(opp: OpportunityEntry) -> OpportunityEntry:
     db = load_db()
-    existing_titles = {o.title.lower() for o in db.opportunities}
-    if opp.title.lower() in existing_titles:
-        return opp
+    for existing in db.opportunities:
+        sim = _title_similarity(opp.title, existing.title)
+        if sim >= DUPLICATE_THRESHOLD:
+            if opp.composite_score > existing.composite_score:
+                # Incoming scores higher — replace existing
+                db.opportunities.remove(existing)
+                db.opportunities.append(opp)
+                db.opportunities.sort(key=lambda o: o.composite_score, reverse=True)
+                save_db(db)
+                log.info(
+                    "Replaced duplicate '%s' (%.1f) with higher-scoring '%s' (%.1f) [sim=%.2f]",
+                    existing.title, existing.composite_score,
+                    opp.title, opp.composite_score, sim,
+                )
+            else:
+                log.info(
+                    "Skipping duplicate '%s' (%.1f) — existing '%s' (%.1f) scores higher [sim=%.2f]",
+                    opp.title, opp.composite_score,
+                    existing.title, existing.composite_score, sim,
+                )
+            return opp
     db.opportunities.append(opp)
     db.opportunities.sort(key=lambda o: o.composite_score, reverse=True)
     save_db(db)
@@ -115,6 +169,44 @@ def delete_opportunity(opp_id: str) -> bool:
                 save_db(db)
                 return True
     return False
+
+
+def deduplicate_opportunities() -> list[dict]:
+    """Scan all active opportunities for fuzzy title duplicates.
+    Within each duplicate pair, keep the higher-scored one and remove the other.
+    Returns a summary list of removed opportunities."""
+    db = load_db()
+    # Process highest-scored first so the keeper is always encountered first
+    sorted_opps = sorted(db.opportunities, key=lambda o: o.composite_score, reverse=True)
+    to_remove: set[str] = set()
+    removed_log: list[dict] = []
+
+    for i, a in enumerate(sorted_opps):
+        if a.id in to_remove:
+            continue
+        for b in sorted_opps[i + 1:]:
+            if b.id in to_remove:
+                continue
+            sim = _title_similarity(a.title, b.title)
+            if sim >= DUPLICATE_THRESHOLD:
+                to_remove.add(b.id)
+                removed_log.append({
+                    "removed_title": b.title,
+                    "removed_score": round(b.composite_score, 1),
+                    "kept_title": a.title,
+                    "kept_score": round(a.composite_score, 1),
+                    "similarity": round(sim, 2),
+                })
+                log.info(
+                    "Dedup: removing '%s' (%.1f) in favour of '%s' (%.1f) [sim=%.2f]",
+                    b.title, b.composite_score, a.title, a.composite_score, sim,
+                )
+
+    if to_remove:
+        db.opportunities = [o for o in db.opportunities if o.id not in to_remove]
+        save_db(db)
+
+    return removed_log
 
 
 def archive_opportunity(opp_id: str) -> bool:

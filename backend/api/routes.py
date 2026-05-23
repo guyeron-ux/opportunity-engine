@@ -284,6 +284,13 @@ def rerate_opportunities():
     return {"ok": True, "message": "Re-rating started"}
 
 
+@router.post("/opportunities/deduplicate")
+def deduplicate():
+    from backend.models.database import deduplicate_opportunities
+    removed = deduplicate_opportunities()
+    return {"ok": True, "removed_count": len(removed), "removed": removed}
+
+
 class RerateThresholdRequest(BaseModel):
     threshold: float = 75.0
 

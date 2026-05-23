@@ -107,14 +107,18 @@ class Orchestrator:
         return all_signals
 
     def _deduplicate(self, signals: list[dict]) -> list[dict]:
-        seen_titles: set[str] = set()
-        unique = []
+        from backend.models.database import _title_similarity, DUPLICATE_THRESHOLD
+        kept: list[dict] = []
         for signal in signals:
-            title_key = signal.get("title", "").lower().strip()
-            if title_key and title_key not in seen_titles:
-                seen_titles.add(title_key)
-                unique.append(signal)
-        return unique
+            title = signal.get("title", "").strip()
+            if not title:
+                continue
+            if not any(
+                _title_similarity(title, k.get("title", "")) >= DUPLICATE_THRESHOLD
+                for k in kept
+            ):
+                kept.append(signal)
+        return kept
 
     async def _process_batch(self, signals: list[dict]) -> list:
         loop = asyncio.get_event_loop()
