@@ -64,10 +64,18 @@ class BaseAgent:
                 temperature=temperature,
                 max_tokens=max_tokens,
             )
-            return response.choices[0].message.content or ""
+            return self._strip_thinking(response.choices[0].message.content or "")
         except Exception as e:
             self._log.error("LLM call failed: %s", e)
             raise
+
+    @staticmethod
+    def _strip_thinking(text: str) -> str:
+        """Remove <think>...</think> and <thinking>...</thinking> blocks from text."""
+        import re
+        text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
+        text = re.sub(r"<thinking>.*?</thinking>", "", text, flags=re.DOTALL)
+        return text.strip()
 
     def _stream(
         self,
@@ -76,7 +84,7 @@ class BaseAgent:
         temperature: float = 0.7,
         max_tokens: int = 1500,
     ):
-        """Stream LLM response, yielding text chunks."""
+        """Stream LLM response, yielding text chunks with thinking tokens stripped."""
         if system:
             messages = [{"role": "system", "content": system}] + messages
         try:
@@ -87,10 +95,36 @@ class BaseAgent:
                 max_tokens=max_tokens,
                 stream=True,
             )
+            in_thinking = False
+            buf = ""
             for chunk in stream:
-                delta = chunk.choices[0].delta.content
-                if delta:
-                    yield delta
+                delta = chunk.choices[0].delta
+                # Some APIs expose reasoning tokens in a separate field — skip entirely
+                if getattr(delta, "reasoning_content", None):
+                    continue
+                content = delta.content
+                if not content:
+                    continue
+                buf += content
+                # State machine: strip <think>...</think> blocks mid-stream
+                while buf:
+                    if in_thinking:
+                        end = buf.find("</think>")
+                        if end == -1:
+                            buf = ""  # still inside thinking block, consume and wait
+                            break
+                        buf = buf[end + 8:]  # skip past </think>
+                        in_thinking = False
+                    else:
+                        start = buf.find("<think>")
+                        if start == -1:
+                            yield buf
+                            buf = ""
+                            break
+                        if start > 0:
+                            yield buf[:start]  # yield content before the tag
+                        buf = buf[start + 7:]  # skip past <think>
+                        in_thinking = True
         except Exception as e:
             self._log.error("LLM stream failed: %s", e)
             raise
