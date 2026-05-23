@@ -229,7 +229,7 @@ export function ChatPanel({ opp, onOppUpdated }: Props) {
                         <p>This will rescore using insights from this conversation. Scores may change.</p>
                         <div className="flex gap-2">
                           <button
-                            onClick={confirmRerate}
+                            onClick={() => confirmRerate()}
                             className="bg-violet-700 hover:bg-violet-600 text-white px-2.5 py-1 rounded-md transition-colors"
                           >
                             Confirm rerate
