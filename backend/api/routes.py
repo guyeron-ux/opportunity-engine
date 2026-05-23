@@ -13,6 +13,7 @@ from backend.models.database import (
     get_opportunities, archive_opportunity, update_opportunity,
     get_db_settings, update_db_settings, load_db,
     get_opportunity_by_id, append_chat_messages, clear_chat,
+    delete_opportunity,
 )
 from backend.models.opportunity import OpportunityEntry
 from backend.api.websocket import ws_manager
@@ -107,6 +108,25 @@ def patch_opportunity(opp_id: str, body: PatchRequest):
     if not result:
         raise HTTPException(404, f"Opportunity {opp_id} not found")
     return result
+
+
+@router.delete("/opportunities/{opp_id}")
+def delete_opp(opp_id: str):
+    success = delete_opportunity(opp_id)
+    if not success:
+        raise HTTPException(404, f"Opportunity {opp_id} not found")
+    return {"ok": True}
+
+
+@router.post("/opportunities/{opp_id}/calibrate")
+def calibrate_one_opportunity(opp_id: str):
+    opp = get_opportunity_by_id(opp_id)
+    if not opp:
+        raise HTTPException(404, f"Opportunity {opp_id} not found")
+    orch = get_orchestrator()
+    thread = threading.Thread(target=orch.calibrate_one, args=(opp_id,), daemon=True)
+    thread.start()
+    return {"ok": True}
 
 
 @router.post("/opportunities/{opp_id}/archive")

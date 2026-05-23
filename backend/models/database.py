@@ -106,6 +106,17 @@ def add_opportunity(opp: OpportunityEntry) -> OpportunityEntry:
     return opp
 
 
+def delete_opportunity(opp_id: str) -> bool:
+    db = load_db()
+    for lst in [db.opportunities, db.archived_opportunities]:
+        for opp in lst:
+            if opp.id == opp_id:
+                lst.remove(opp)
+                save_db(db)
+                return True
+    return False
+
+
 def archive_opportunity(opp_id: str) -> bool:
     db = load_db()
     for i, opp in enumerate(db.opportunities):

@@ -104,6 +104,10 @@ export const api = {
     req(`/opportunities/${id}/annotate`, { method: 'POST', body: JSON.stringify({ notes }) }),
   patchOpportunity: (id: string, patch: { title?: string; notes?: string }) =>
     req<Opportunity>(`/opportunities/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
+  deleteOpportunity: (id: string) =>
+    req<{ ok: boolean }>(`/opportunities/${id}`, { method: 'DELETE' }),
+  calibrateOne: (id: string) =>
+    req<{ ok: boolean }>(`/opportunities/${id}/calibrate`, { method: 'POST' }),
   archive: (id: string) => req(`/opportunities/${id}/archive`, { method: 'POST' }),
   requestInfo: (id: string) => req(`/opportunities/${id}/request-info`, { method: 'POST' }),
   getSettings: () => req<Record<string, unknown>>('/settings'),

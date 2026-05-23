@@ -335,6 +335,41 @@ class Orchestrator:
         finally:
             self._cycle_running = False
 
+    # --- Single-opportunity full rescore (calibrate: scores + DA, no chat context) ---
+
+    def calibrate_one(self, opp_id: str):
+        asyncio.run(self._async_calibrate_one(opp_id))
+
+    async def _async_calibrate_one(self, opp_id: str):
+        from backend.models.database import load_db, save_db
+        try:
+            db = load_db()
+            opp = next((o for o in db.opportunities if o.id == opp_id), None)
+            if not opp:
+                log.warning("calibrate_one: opportunity %s not found", opp_id)
+                return
+            report = self._opp_to_report(opp)
+            loop = asyncio.get_event_loop()
+            new_rating = await loop.run_in_executor(None, self._rater.rate, report)
+            if new_rating:
+                opp.ratings = new_rating.ratings
+                opp.composite_score = new_rating.composite_score
+                opp.classification = new_rating.classification
+                if new_rating.devils_advocate:
+                    opp.devils_advocate = new_rating.devils_advocate
+                opp.updated_at = datetime.utcnow()
+                db.opportunities.sort(key=lambda o: o.composite_score, reverse=True)
+                save_db(db)
+                await self._broadcast("opportunity_updated", {
+                    "id": opp_id,
+                    "score": opp.composite_score,
+                    "type": opp.classification.type,
+                    "go_to_market": opp.classification.go_to_market,
+                })
+                log.info("calibrate_one: completed for '%s' → %.1f", opp.title, opp.composite_score)
+        except Exception as e:
+            log.error("calibrate_one error for %s: %s", opp_id, e, exc_info=True)
+
     # --- Single-opportunity rerate WITH chat context (scores can update) ---
 
     def rerate_one_with_context(self, opp_id: str, chat_context: list[dict]):

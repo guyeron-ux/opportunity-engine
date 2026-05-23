@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { api, type Opportunity } from './api'
+import { exportToMarkdown, exportToPDF } from './utils/export'
 import { OpportunityTable } from './components/OpportunityTable'
 import { OpportunityDetail } from './components/OpportunityDetail'
 import { FilterPanel } from './components/FilterPanel'
@@ -61,6 +62,7 @@ export default function App() {
     min_score: 0, types: [], categories: [], industries: [], gtm: [],
   })
   const [selected, setSelected] = useState<Opportunity | null>(null)
+  const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set())
 
   // Cycle state — driven by backend polling, not local guess
   const [cycleRunning, setCycleRunning] = useState(false)
@@ -227,6 +229,41 @@ export default function App() {
     }
   }
 
+  function handleCheck(id: string, checked: boolean) {
+    setCheckedIds(prev => {
+      const next = new Set(prev)
+      checked ? next.add(id) : next.delete(id)
+      return next
+    })
+  }
+
+  function handleCheckAll(checked: boolean) {
+    setCheckedIds(checked ? new Set(data.map(o => o.id)) : new Set())
+  }
+
+  async function handleBulkDelete() {
+    if (!window.confirm(`Delete ${checkedIds.size} opportunit${checkedIds.size === 1 ? 'y' : 'ies'}? This cannot be undone.`)) return
+    await Promise.all([...checkedIds].map(id => api.deleteOpportunity(id).catch(() => {})))
+    setCheckedIds(new Set())
+    refetch()
+  }
+
+  async function handleBulkRerate() {
+    await Promise.all([...checkedIds].map(id => api.rerateOne(id).catch(() => {})))
+    setCheckedIds(new Set())
+  }
+
+  async function handleBulkCalibrate() {
+    await Promise.all([...checkedIds].map(id => api.calibrateOne(id).catch(() => {})))
+    setCheckedIds(new Set())
+  }
+
+  function handleBulkExport(format: 'md' | 'pdf') {
+    const opps = data.filter(o => checkedIds.has(o.id))
+    if (opps.length === 0) return
+    format === 'md' ? exportToMarkdown(opps) : exportToPDF(opps)
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
@@ -297,19 +334,58 @@ export default function App() {
         </div>
 
         <main className="flex-1 flex flex-col overflow-hidden">
-          <div className="px-6 py-2 border-b border-gray-800 flex items-center gap-4 text-xs text-gray-500">
-            <span>{data.length} opportunit{data.length === 1 ? 'y' : 'ies'}</span>
-            {data.length > 0 && (
-              <>
-                <span>·</span>
-                <span>Avg score: {(data.reduce((s, o) => s + o.composite_score, 0) / data.length).toFixed(1)}</span>
-                <span>·</span>
-                <span>{data.filter(o => o.classification.type === 'Moonshot').length} Moonshots</span>
-              </>
-            )}
-          </div>
+          {checkedIds.size > 0 ? (
+            <div className="px-4 py-2 border-b border-violet-800/50 bg-violet-950/30 flex items-center gap-2 flex-wrap text-xs">
+              <span className="text-violet-300 font-semibold mr-1">{checkedIds.size} selected</span>
+              <button
+                onClick={handleBulkRerate}
+                className="border border-gray-600 hover:border-gray-400 text-gray-300 px-2.5 py-1 rounded-lg transition-colors"
+                title="Classification-only rerate (scores frozen)"
+              >↻ Rerate</button>
+              <button
+                onClick={handleBulkCalibrate}
+                className="border border-amber-700 hover:border-amber-500 text-amber-400 hover:text-amber-300 px-2.5 py-1 rounded-lg transition-colors"
+                title="Full rescore with latest rubric + Devil's Advocate"
+              >⚖ Calibrate</button>
+              <button
+                onClick={() => handleBulkExport('md')}
+                className="border border-gray-600 hover:border-gray-400 text-gray-300 px-2.5 py-1 rounded-lg transition-colors"
+              >↓ MD</button>
+              <button
+                onClick={() => handleBulkExport('pdf')}
+                className="border border-gray-600 hover:border-gray-400 text-gray-300 px-2.5 py-1 rounded-lg transition-colors"
+              >↓ PDF</button>
+              <button
+                onClick={handleBulkDelete}
+                className="border border-red-800 hover:border-red-600 text-red-400 hover:text-red-300 px-2.5 py-1 rounded-lg transition-colors"
+              >🗑 Delete</button>
+              <button
+                onClick={() => setCheckedIds(new Set())}
+                className="ml-auto text-gray-600 hover:text-gray-400 px-2 py-1 transition-colors"
+              >✕ Clear</button>
+            </div>
+          ) : (
+            <div className="px-6 py-2 border-b border-gray-800 flex items-center gap-4 text-xs text-gray-500">
+              <span>{data.length} opportunit{data.length === 1 ? 'y' : 'ies'}</span>
+              {data.length > 0 && (
+                <>
+                  <span>·</span>
+                  <span>Avg score: {(data.reduce((s, o) => s + o.composite_score, 0) / data.length).toFixed(1)}</span>
+                  <span>·</span>
+                  <span>{data.filter(o => o.classification.type === 'Moonshot').length} Moonshots</span>
+                </>
+              )}
+            </div>
+          )}
 
-          <OpportunityTable opportunities={data} onSelect={setSelected} loading={loading} />
+          <OpportunityTable
+            opportunities={data}
+            onOpen={setSelected}
+            loading={loading}
+            checkedIds={checkedIds}
+            onCheck={handleCheck}
+            onCheckAll={handleCheckAll}
+          />
         </main>
       </div>
 

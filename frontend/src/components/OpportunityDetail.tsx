@@ -3,6 +3,7 @@ import type { Opportunity } from '../api'
 import { api } from '../api'
 import { ScoreBar } from './ScoreBar'
 import { ChatPanel } from './ChatPanel'
+import { exportToMarkdown, exportToPDF } from '../utils/export'
 
 interface Props {
   opp: Opportunity
@@ -25,6 +26,7 @@ export function OpportunityDetail({ opp, onClose, onUpdate }: Props) {
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleDraft, setTitleDraft] = useState(opp.title)
   const [deepResearchOpen, setDeepResearchOpen] = useState(false)
+  const [showExportMenu, setShowExportMenu] = useState(false)
   const [deepResearchTask, setDeepResearchTask] = useState('')
   const [deepResearchRunning, setDeepResearchRunning] = useState(false)
   const titleInputRef = useRef<HTMLInputElement>(null)
@@ -117,7 +119,26 @@ export function OpportunityDetail({ opp, onClose, onUpdate }: Props) {
           <div className="text-3xl font-black" style={{ color: scoreToColor(opp.composite_score) }}>
             {Math.round(opp.composite_score)}
           </div>
-          <button onClick={onClose} className="ml-2 text-gray-500 hover:text-white text-xl">✕</button>
+          <div className="relative ml-1">
+            <button
+              onClick={() => setShowExportMenu(v => !v)}
+              className="text-xs border border-gray-700 hover:border-gray-500 text-gray-500 hover:text-gray-300 px-2 py-1 rounded-lg transition-colors"
+              title="Export this opportunity"
+            >↓</button>
+            {showExportMenu && (
+              <div className="absolute right-0 top-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-10 py-1 min-w-[110px]">
+                <button
+                  onClick={() => { exportToMarkdown([opp]); setShowExportMenu(false) }}
+                  className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 transition-colors"
+                >Markdown (.md)</button>
+                <button
+                  onClick={() => { exportToPDF([opp]); setShowExportMenu(false) }}
+                  className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 transition-colors"
+                >PDF</button>
+              </div>
+            )}
+          </div>
+          <button onClick={onClose} className="ml-1 text-gray-500 hover:text-white text-xl">✕</button>
         </div>
 
         <div className="px-6 py-4 space-y-6">
