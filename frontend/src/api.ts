@@ -9,6 +9,9 @@ export interface RatingFactor {
   evidence: string[]
   solution_tam?: string
   industry_size?: string
+  capital_efficiency?: number
+  time_to_revenue?: number
+  execution_accessibility?: number
 }
 
 export interface Ratings {
@@ -17,6 +20,7 @@ export interface Ratings {
   solution_clarity: RatingFactor
   competitive_insight: RatingFactor
   monetization_potential: RatingFactor
+  startup_viability: RatingFactor
   signal_authority: RatingFactor
 }
 

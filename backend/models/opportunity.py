@@ -11,6 +11,10 @@ class RatingFactor(BaseModel):
     # Market size factor only
     solution_tam: str = ""
     industry_size: str = ""
+    # Startup viability factor only
+    capital_efficiency: int = 0
+    time_to_revenue: int = 0
+    execution_accessibility: int = 0
 
 
 class Ratings(BaseModel):
@@ -19,16 +23,19 @@ class Ratings(BaseModel):
     solution_clarity: RatingFactor = Field(default_factory=lambda: RatingFactor(score=0))
     competitive_insight: RatingFactor = Field(default_factory=lambda: RatingFactor(score=0))
     monetization_potential: RatingFactor = Field(default_factory=lambda: RatingFactor(score=0))
+    startup_viability: RatingFactor = Field(default_factory=lambda: RatingFactor(score=0))
     signal_authority: RatingFactor = Field(default_factory=lambda: RatingFactor(score=0))
 
     def composite(self) -> float:
+        # Weights: SV added at 15%, others scaled proportionally to 85%
         return (
-            self.market_size.score * 0.25
-            + self.pain_severity.score * 0.25
-            + self.solution_clarity.score * 0.15
-            + self.competitive_insight.score * 0.15
-            + self.monetization_potential.score * 0.15
-            + self.signal_authority.score * 0.05
+            self.market_size.score * 0.2125
+            + self.pain_severity.score * 0.2125
+            + self.solution_clarity.score * 0.1275
+            + self.competitive_insight.score * 0.1275
+            + self.monetization_potential.score * 0.1275
+            + self.startup_viability.score * 0.15
+            + self.signal_authority.score * 0.0425
         )
 
 

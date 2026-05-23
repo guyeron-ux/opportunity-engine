@@ -7,7 +7,7 @@ from backend.models.opportunity import (
 from backend.models.database import generate_opportunity_id, load_db
 
 SYSTEM_PROMPT = """You are a startup opportunity rating specialist. Your job is to score opportunities
-on a rigorous 6-factor rubric and classify them.
+on a rigorous 7-factor rubric and classify them.
 
 Scoring rubric (0-100 each):
 
@@ -69,7 +69,29 @@ Scoring rubric (0-100 each):
    50-69:  Possible but uncertain
    0-49:   Unclear monetization
 
-6. SIGNAL AUTHORITY (SA) — weight 5%
+6. STARTUP VIABILITY (SV) — weight 15%
+   How accessible is this opportunity for a small startup team? Assess three sub-factors
+   and compute the composite: score = 0.40 × capital_efficiency + 0.35 × time_to_revenue + 0.25 × execution_accessibility.
+
+   Capital Efficiency (40% of SV) — how much capital before first meaningful revenue?
+   80-100: Pure software/API, MVP under $500K, no hardware
+   55-75:  Moderate infra or integration, some partner dependency
+   25-50:  Hardware component, significant compliance tooling, or opex-heavy ops
+   0-20:   Physical infrastructure, manufacturing, or multi-year R&D before any revenue
+
+   Time to First Revenue (35% of SV) — months from founding to first paying customer?
+   80-100: 3-9 months (workflow SaaS, AI layer on existing data)
+   55-75:  9-18 months (compliance-heavy SaaS, marketplace bootstrap)
+   25-50:  18-36 months (hardware + software bundle, regulatory approvals required)
+   0-20:   3+ years (deep tech, infrastructure, FDA Class II/III, utility-scale)
+
+   Execution Accessibility (25% of SV) — can a 5-10 person generalist+domain team execute?
+   80-100: Standard cloud stack, domain expertise + engineers, no regulatory moats
+   55-75:  Domain specialists + some compliance, manageable partner dependencies
+   25-50:  Requires hardware engineers, PhDs, or meaningful regulatory filings
+   0-20:   Requires manufacturing, utility/government licensing, or massive field operations
+
+7. SIGNAL AUTHORITY (SA) — weight 4.25%
    90-100: Multiple authoritative sources (VCs actively investing, major industry press,
            regulatory/macro tailwinds)
    70-89:  Mix of authoritative and community signals
@@ -187,6 +209,14 @@ Return a JSON object with these exact keys:
     "rationale": "...",
     "evidence": []
   }},
+  "startup_viability": {{
+    "score": 0-100,
+    "capital_efficiency": 0-100,
+    "time_to_revenue": 0-100,
+    "execution_accessibility": 0-100,
+    "rationale": "1-2 sentences — what drives the viability score up or down",
+    "evidence": ["key factor 1", "key factor 2"]
+  }},
   "signal_authority": {{
     "score": 0-100,
     "rationale": "...",
@@ -247,6 +277,7 @@ Return valid JSON only, no markdown."""
             return f
 
         ms_data = scored.get("market_size", {})
+        sv_data = scored.get("startup_viability", {})
         ratings = Ratings(
             market_size=make_factor(ms_data, {
                 "solution_tam": ms_data.get("solution_tam", ""),
@@ -256,6 +287,11 @@ Return valid JSON only, no markdown."""
             solution_clarity=make_factor(scored.get("solution_clarity", {})),
             competitive_insight=make_factor(scored.get("competitive_insight", {})),
             monetization_potential=make_factor(scored.get("monetization_potential", {})),
+            startup_viability=make_factor(sv_data, {
+                "capital_efficiency": int(sv_data.get("capital_efficiency", 0)),
+                "time_to_revenue": int(sv_data.get("time_to_revenue", 0)),
+                "execution_accessibility": int(sv_data.get("execution_accessibility", 0)),
+            }),
             signal_authority=make_factor(scored.get("signal_authority", {})),
         )
 

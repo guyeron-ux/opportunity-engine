@@ -12,12 +12,13 @@ interface Props {
 }
 
 const FACTORS: Array<{ key: keyof Opportunity['ratings']; label: string; weight: number }> = [
-  { key: 'market_size', label: 'Market Size', weight: 0.25 },
-  { key: 'pain_severity', label: 'Pain Severity', weight: 0.25 },
-  { key: 'solution_clarity', label: 'Solution Clarity', weight: 0.15 },
-  { key: 'competitive_insight', label: 'Competitive Insight', weight: 0.15 },
-  { key: 'monetization_potential', label: 'Monetization', weight: 0.15 },
-  { key: 'signal_authority', label: 'Signal Authority', weight: 0.05 },
+  { key: 'market_size', label: 'Market Size', weight: 0.2125 },
+  { key: 'pain_severity', label: 'Pain Severity', weight: 0.2125 },
+  { key: 'solution_clarity', label: 'Solution Clarity', weight: 0.1275 },
+  { key: 'competitive_insight', label: 'Competitive Insight', weight: 0.1275 },
+  { key: 'monetization_potential', label: 'Monetization', weight: 0.1275 },
+  { key: 'startup_viability', label: 'Startup Viability', weight: 0.15 },
+  { key: 'signal_authority', label: 'Signal Authority', weight: 0.0425 },
 ]
 
 export function OpportunityDetail({ opp, onClose, onUpdate }: Props) {
@@ -146,13 +147,23 @@ export function OpportunityDetail({ opp, onClose, onUpdate }: Props) {
           <section>
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Score Breakdown</h3>
             {FACTORS.map(({ key, label, weight }) => (
-              <ScoreBar
-                key={key}
-                label={label}
-                score={opp.ratings[key].score}
-                weight={weight}
-                rationale={opp.ratings[key].rationale}
-              />
+              <div key={key}>
+                <ScoreBar
+                  label={label}
+                  score={opp.ratings[key].score}
+                  weight={weight}
+                  rationale={opp.ratings[key].rationale}
+                />
+                {key === 'startup_viability' && (opp.ratings.startup_viability.capital_efficiency ?? 0) > 0 && (
+                  <div className="flex gap-3 text-xs text-gray-600 mb-2 ml-0.5 -mt-1">
+                    <span>Capital: <span className="text-gray-400 font-mono">{opp.ratings.startup_viability.capital_efficiency}</span></span>
+                    <span>·</span>
+                    <span>Time to Rev: <span className="text-gray-400 font-mono">{opp.ratings.startup_viability.time_to_revenue}</span></span>
+                    <span>·</span>
+                    <span>Execution: <span className="text-gray-400 font-mono">{opp.ratings.startup_viability.execution_accessibility}</span></span>
+                  </div>
+                )}
+              </div>
             ))}
           </section>
 
