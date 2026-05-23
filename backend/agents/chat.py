@@ -16,10 +16,13 @@ clarify scoring decisions, and provide actionable insights.
 {context}
 --- END CONTEXT ---
 
-When warranted at the END of your reply only, you may append action tags:
-- Append `[SUGGEST_RERATE]` if the conversation reveals the current scores are significantly off.
-- Append `[SUGGEST_EDIT:{{"field": "value"}}]` if you want to suggest a specific field change \
-  (e.g., title, notes). Only append these tags when genuinely useful — do not append them routinely.
+At the END of your reply only, append action tags when relevant:
+- Append `[SUGGEST_RERATE]` when ANY of the following is true:
+  • The user explicitly asks to rerate, rescore, or update the score
+  • The conversation has surfaced new facts (missed competitors, better TAM data, capital intensity insight) that would materially change a score
+  • You have just identified that a score is wrong by more than ~10 points
+  Do NOT wait for "perfect" certainty — if the user asked for a rerate, always append it.
+- Append `[SUGGEST_EDIT:{{"field": "value"}}]` to suggest a specific field change (e.g., title, notes).
 
 Respond conversationally but with analytical rigor. Be direct and insightful."""
 
@@ -50,6 +53,8 @@ SCORES:
 - Solution Clarity: {r.solution_clarity.score}/100 — {r.solution_clarity.rationale}
 - Competitive Insight: {r.competitive_insight.score}/100 — {r.competitive_insight.rationale}
 - Monetization Potential: {r.monetization_potential.score}/100 — {r.monetization_potential.rationale}
+- Startup Viability: {r.startup_viability.score}/100 — {r.startup_viability.rationale}
+  (Capital Efficiency: {r.startup_viability.capital_efficiency}, Time to Revenue: {r.startup_viability.time_to_revenue}, Execution Accessibility: {r.startup_viability.execution_accessibility})
 - Signal Authority: {r.signal_authority.score}/100 — {r.signal_authority.rationale}
 
 PAIN POINT: {res.pain_point_summary}
