@@ -33,14 +33,19 @@ function useOpportunities(filters: Filters) {
     try {
       const params: Record<string, string> = {}
       if (filters.min_score > 0) params.min_score = String(filters.min_score)
-      if (filters.types.length === 1) params.type = filters.types[0]
-      if (filters.categories.length === 1) params.category = filters.categories[0]
-      if (filters.industries.length === 1) params.industry = filters.industries[0]
+      // text filters are always done client-side with contains matching —
+      // the LLM may return "Legal Technology" for "Legal" or "SaaS Platform" for "SaaS"
       const opps = await api.getOpportunities(Object.keys(params).length ? params : undefined)
       let filtered = opps
-      if (filters.types.length > 1) filtered = filtered.filter(o => filters.types.includes(o.classification.type))
-      if (filters.categories.length > 1) filtered = filtered.filter(o => filters.categories.includes(o.classification.category))
-      if (filters.industries.length > 1) filtered = filtered.filter(o => filters.industries.includes(o.classification.industry))
+      // type: exact (controlled values — Moonshot / Pragmatic)
+      if (filters.types.length > 0) filtered = filtered.filter(o => filters.types.includes(o.classification.type))
+      // category / industry: contains, case-insensitive
+      if (filters.categories.length > 0) filtered = filtered.filter(o =>
+        filters.categories.some(c => o.classification.category.toLowerCase().includes(c.toLowerCase()))
+      )
+      if (filters.industries.length > 0) filtered = filtered.filter(o =>
+        filters.industries.some(ind => o.classification.industry.toLowerCase().includes(ind.toLowerCase()))
+      )
       // GTM: "B2B" matches "B2B", "B2B/B2C", "B2B/B2G", etc.
       if (filters.gtm.length > 0) filtered = filtered.filter(o =>
         filters.gtm.some(g => o.classification.go_to_market.includes(g))
