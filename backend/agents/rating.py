@@ -248,7 +248,7 @@ Return valid JSON only, no markdown."""
 
         extra_context = report.get("extra_context", "")
         if extra_context:
-            scoring_prompt += f"\n\n---\nADDITIONAL CONTEXT (use to improve scoring accuracy):\n{extra_context}"
+            scoring_prompt += f"\n\n---\nADDITIONAL CONTEXT (incorporate into scoring — adjust each affected factor up or down based on what the evidence actually supports):\n{extra_context}"
 
         try:
             scored = self._call_json(
