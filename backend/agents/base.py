@@ -176,13 +176,43 @@ class BaseAgent:
             return json.loads(clean)
         except json.JSONDecodeError:
             self._log.warning("JSON parse failed, attempting extraction from: %s", clean[:200])
-            # Try to find JSON object/array in text
-            for start_char, end_char in [("{", "}"), ("[", "]")]:
-                start = clean.find(start_char)
-                end = clean.rfind(end_char)
-                if start != -1 and end != -1 and end > start:
+            # MiniMax M2.7 narrates before answering — the real JSON is at the END.
+            # Walk backwards from the last closing bracket to find the matching opener.
+            for open_ch, close_ch in [("[", "]"), ("{", "}")]:
+                candidate = self._extract_last_json_block(clean, open_ch, close_ch)
+                if candidate:
                     try:
-                        return json.loads(clean[start:end + 1])
+                        return json.loads(candidate)
                     except json.JSONDecodeError:
                         pass
             raise ValueError(f"Could not parse JSON from LLM response: {raw[:500]}")
+
+    @staticmethod
+    def _extract_last_json_block(text: str, open_ch: str, close_ch: str) -> str | None:
+        """Find the last complete JSON array/object by bracket-matching from the end."""
+        last_close = text.rfind(close_ch)
+        if last_close == -1:
+            return None
+        depth = 0
+        in_string = False
+        escape_next = False
+        for i in range(last_close, -1, -1):
+            ch = text[i]
+            if escape_next:
+                escape_next = False
+                continue
+            if ch == '\\' and in_string:
+                escape_next = True
+                continue
+            if ch == '"':
+                in_string = not in_string
+                continue
+            if in_string:
+                continue
+            if ch == close_ch:
+                depth += 1
+            elif ch == open_ch:
+                depth -= 1
+                if depth == 0:
+                    return text[i:last_close + 1]
+        return None
