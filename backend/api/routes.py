@@ -363,6 +363,53 @@ def debug_ping():
     return results
 
 
+@router.get("/debug/scout-test")
+def debug_scout_test():
+    """Run one real scout search + LLM extraction and return the raw output."""
+    from backend.agents.base import BaseAgent
+    agent = BaseAgent("debug")
+
+    query = "industry still uses spreadsheets fax paper manual process costly 2025"
+    search_results = agent.web_search(query, max_results=3)
+    context = "\n\n".join(
+        f"Source: {r.get('url','')}\nTitle: {r.get('title','')}\nContent: {r.get('content','')[:400]}"
+        for r in search_results
+    )
+
+    prompt = f"""Analyze these articles and extract non-obvious startup opportunity signals.
+
+{context}
+
+Return a JSON array. Each signal:
+{{
+  "title": "specific opportunity title",
+  "pain_point": "specific pain point with evidence",
+  "affected_segment": "who is affected",
+  "signal_strength": 1-5,
+  "why_non_obvious": "what makes this easy to overlook",
+  "source_urls": ["url1"],
+  "query_used": "{query}"
+}}
+
+Only include signals with signal_strength >= 3. Return [] if none qualify.
+Return valid JSON array only, no markdown."""
+
+    try:
+        raw_text = agent._call(
+            [{"role": "user", "content": prompt}],
+            max_tokens=2000,
+            temperature=0.2,
+        )
+        return {
+            "search_results_count": len(search_results),
+            "raw_llm_response": raw_text[:2000],
+            "raw_llm_length": len(raw_text),
+            "first_search_title": search_results[0].get("title", "") if search_results else "",
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
 @router.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
     orch = get_orchestrator()
