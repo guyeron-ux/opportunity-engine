@@ -323,26 +323,39 @@ def debug_ping():
         "llm_model": settings.llm_model,
     }
 
-    # Test Tavily
+    # Test Tavily — call raw to inspect full response
     try:
-        agent = BaseAgent("debug")
-        hits = agent.web_search("startup opportunity software 2025", max_results=2)
+        from tavily import TavilyClient
+        tc = TavilyClient(api_key=settings.tavily_api_key)
+        raw = tc.search(query="startup software 2025", max_results=2, search_depth="basic")
+        hits = raw.get("results", [])
         results["tavily_ok"] = True
         results["tavily_results"] = len(hits)
         results["tavily_sample"] = hits[0].get("title", "") if hits else ""
+        results["tavily_raw_keys"] = list(raw.keys())
     except Exception as e:
         results["tavily_ok"] = False
         results["tavily_error"] = str(e)
 
-    # Test LLM
+    # Test LLM — inspect raw message fields
     try:
-        agent2 = BaseAgent("debug")
-        resp = agent2._call(
-            [{"role": "user", "content": "Reply with exactly: OK"}],
-            max_tokens=10,
+        from openai import OpenAI
+        llm = OpenAI(api_key=settings.llm_api_key, base_url=settings.llm_base_url, timeout=30.0)
+        response = llm.chat.completions.create(
+            model=settings.llm_model,
+            messages=[{"role": "user", "content": "Reply with exactly the word: OK"}],
+            max_tokens=20,
         )
+        msg = response.choices[0].message
         results["llm_ok"] = True
-        results["llm_response"] = resp.strip()
+        results["llm_content"] = msg.content or ""
+        results["llm_reasoning_content"] = getattr(msg, "reasoning_content", None) or ""
+        results["llm_msg_fields"] = [k for k in dir(msg) if not k.startswith("_")]
+        # what _call() would return after fix
+        content = msg.content or ""
+        if not content.strip():
+            content = getattr(msg, "reasoning_content", "") or ""
+        results["llm_effective_response"] = content[:200]
     except Exception as e:
         results["llm_ok"] = False
         results["llm_error"] = str(e)

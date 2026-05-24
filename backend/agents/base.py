@@ -64,7 +64,14 @@ class BaseAgent:
                 temperature=temperature,
                 max_tokens=max_tokens,
             )
-            return self._strip_thinking(response.choices[0].message.content or "")
+            msg = response.choices[0].message
+            # Some reasoning models (MiniMax M2.7) return final output in content
+            # but may also expose chain-of-thought in reasoning_content.
+            # If content is empty, fall back to reasoning_content as the answer.
+            content = msg.content or ""
+            if not content.strip():
+                content = getattr(msg, "reasoning_content", "") or ""
+            return self._strip_thinking(content)
         except Exception as e:
             self._log.error("LLM call failed: %s", e)
             raise
