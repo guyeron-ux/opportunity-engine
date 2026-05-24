@@ -47,10 +47,19 @@ class Orchestrator:
             log.info("=== Daily cycle started ===")
 
             # Step 1: Run scouts in parallel
-            all_signals = await asyncio.get_event_loop().run_in_executor(
+            all_signals, quota_exceeded = await asyncio.get_event_loop().run_in_executor(
                 None, self._run_scouts
             )
-            log.info("Scouts returned %d total signals", len(all_signals))
+            log.info("Scouts returned %d total signals (quota_exceeded=%s)", len(all_signals), quota_exceeded)
+
+            if quota_exceeded:
+                msg = "Tavily monthly search quota exhausted — no signals collected. Renew API key at app.tavily.com."
+                await self._broadcast("quota_exceeded", {"service": "tavily", "message": msg})
+                if not all_signals:
+                    log.error("Aborting cycle: quota exhausted and no signals available")
+                    update_db_settings({"cycle_running": False})
+                    return
+
             await self._broadcast("scouts_done", {"signal_count": len(all_signals)})
 
             # Step 2: Deduplicate
@@ -89,22 +98,27 @@ class Orchestrator:
         finally:
             self._cycle_running = False
 
-    def _run_scouts(self) -> list[dict]:
+    def _run_scouts(self) -> tuple[list[dict], bool]:
+        from backend.agents.base import TavilyQuotaExceededError
         scouts = [
             ScoutBusinessAgent(),
             ScoutCommunityAgent(),
             ScoutLongformAgent(),
         ]
         all_signals: list[dict] = []
+        quota_exceeded = False
         with ThreadPoolExecutor(max_workers=3) as executor:
             futures = {executor.submit(s.run): s.name for s in scouts}
             for future in as_completed(futures):
                 try:
                     signals = future.result()
                     all_signals.extend(signals)
+                except TavilyQuotaExceededError:
+                    quota_exceeded = True
+                    log.error("Tavily quota exhausted — scout searches failing. Renew key at app.tavily.com")
                 except Exception as e:
                     log.error("Scout error: %s", e)
-        return all_signals
+        return all_signals, quota_exceeded
 
     def _deduplicate(self, signals: list[dict]) -> list[dict]:
         from backend.models.database import _title_similarity, DUPLICATE_THRESHOLD

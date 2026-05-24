@@ -9,6 +9,10 @@ from tavily import TavilyClient
 from backend.config import settings
 
 
+class TavilyQuotaExceededError(Exception):
+    """Raised when Tavily returns HTTP 433 (monthly search quota exhausted)."""
+
+
 class BaseAgent:
     def __init__(self, name: str):
         self.name = name
@@ -44,6 +48,13 @@ class BaseAgent:
             self._log.debug("Search '%s' → %d results", query, len(results))
             return results
         except Exception as e:
+            if "433" in str(e):
+                self._log.error(
+                    "Tavily quota exhausted (HTTP 433) — renew API key at app.tavily.com"
+                )
+                raise TavilyQuotaExceededError(
+                    "Tavily monthly search quota exhausted. Renew at app.tavily.com."
+                )
             self._log.error("Search error for '%s': %s", query, e)
             return []
 

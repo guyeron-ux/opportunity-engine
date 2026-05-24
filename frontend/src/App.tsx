@@ -150,6 +150,11 @@ export default function App() {
         setLastEvent('')
         setTriggerError(`Cycle error: ${msg.data.error}`)
         break
+      case 'quota_exceeded':
+        setCycleRunning(false)
+        setLastEvent('')
+        setTriggerError(`Search quota exhausted — renew Tavily API key at app.tavily.com`)
+        break
       case 'rerate_start':
         setCycleRunning(true)
         setCycleStartedAt(new Date().toISOString())
