@@ -24,16 +24,18 @@ Signal strength (1-5): only return >= 3.
 """
 
 SEARCH_QUERIES = [
-    # Specific operational subreddits, not just r/startups
-    'site:reddit.com (r/operations OR r/supplychain OR r/manufacturing OR r/healthcareit OR r/legaladvice) "wish there was" OR "no software" OR "manually" 2025',
-    # Professional frustration with no obvious solution
-    '"no tool" OR "no software" OR "still manually" professional workflow enterprise frustration 2025',
-    # Indie hackers niche discovery
-    "indie hackers niche market underserved no competition validated pain 2025",
-    # HN threads where people describe operational pain without finding solutions
-    'site:news.ycombinator.com "Ask HN" "no good solution" OR "nothing exists" OR "build this" specific tool 2025',
-    # LinkedIn practitioner complaints (often surface domain-specific operational pain)
-    "LinkedIn practitioner operator frustrated manual process industry specific 2025",
+    # Practitioners describing painful manual workflows with no software solution
+    "operations supply chain manufacturing professionals manually tracking spreadsheets no software solution 2025",
+    # Niche professional communities expressing unmet software needs
+    "healthcare legal compliance operations workers frustrated no tool exists manual workaround 2025",
+    # Indie hackers and bootstrappers discovering underserved niches with validated demand
+    "indie hacker niche market underserved no competition customers waiting validated pain 2025",
+    # Practitioners on forums asking if software exists for their operational problem
+    "forum practitioners asking is there software tool for specific operational problem no solution 2025",
+    # Field workers and operators describing workflow gaps in detail
+    "field technician compliance officer supply chain manager manual process workaround no software 2025",
+    # Job postings that reveal automation gaps — roles that should be automated but aren't
+    "job posting describes manual role that should be automated no existing software tool 2025",
 ]
 
 
