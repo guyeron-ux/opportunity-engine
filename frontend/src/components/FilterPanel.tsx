@@ -51,7 +51,7 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
         </div>
         <input
           type="range"
-          min={0}
+          min={50}
           max={100}
           step={5}
           value={filters.min_score}
@@ -59,7 +59,7 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
           className="w-full accent-violet-500"
         />
         <div className="flex justify-between text-xs text-gray-600 mt-0.5">
-          <span>0</span><span>50</span><span>100</span>
+          <span>50</span><span>75</span><span>100</span>
         </div>
       </div>
 

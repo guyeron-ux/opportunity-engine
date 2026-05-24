@@ -64,7 +64,7 @@ function useOpportunities(filters: Filters) {
 
 export default function App() {
   const [filters, setFilters] = useState<Filters>({
-    min_score: 0, types: [], categories: [], industries: [], gtm: [],
+    min_score: 70, types: [], categories: [], industries: [], gtm: [],
   })
   const [selected, setSelected] = useState<Opportunity | null>(null)
   const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set())
