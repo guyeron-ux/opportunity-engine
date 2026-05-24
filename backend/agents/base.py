@@ -89,11 +89,22 @@ class BaseAgent:
 
     @staticmethod
     def _strip_thinking(text: str) -> str:
-        """Remove <think>...</think> and <thinking>...</thinking> blocks from text."""
+        """Strip <think>/<thinking> blocks, falling back to their content if nothing remains."""
         import re
-        text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
-        text = re.sub(r"<thinking>.*?</thinking>", "", text, flags=re.DOTALL)
-        return text.strip()
+
+        # First try: strip thinking blocks, keep everything outside them
+        stripped = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
+        stripped = re.sub(r"<thinking>.*?</thinking>", "", stripped, flags=re.DOTALL)
+        result = stripped.strip()
+        if result:
+            return result
+
+        # Fallback: model put the entire answer inside the think block (common in MiniMax M2.7).
+        # Extract the innermost content and return it.
+        m = re.search(r"<think[^>]*>(.*?)</think>", text, flags=re.DOTALL | re.IGNORECASE)
+        if not m:
+            m = re.search(r"<thinking[^>]*>(.*?)</thinking>", text, flags=re.DOTALL | re.IGNORECASE)
+        return m.group(1).strip() if m else text.strip()
 
     def _stream(
         self,

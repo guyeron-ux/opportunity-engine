@@ -80,6 +80,7 @@ Return valid JSON array only, no markdown."""
                 signals = self._call_json(
                     [{"role": "user", "content": prompt}],
                     system=SYSTEM_PROMPT,
+                    max_tokens=1500,
                 )
                 if isinstance(signals, list):
                     raw_signals.extend(signals)
