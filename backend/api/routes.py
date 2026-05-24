@@ -310,6 +310,46 @@ def list_imports():
     return load_db().imports
 
 
+@router.get("/debug/ping")
+def debug_ping():
+    """Test Tavily search and LLM connectivity from the server's environment."""
+    from backend.agents.base import BaseAgent
+    from backend.config import settings
+
+    results: dict = {
+        "tavily_key_set": bool(settings.tavily_api_key),
+        "llm_key_set": bool(settings.llm_api_key),
+        "llm_base_url": settings.llm_base_url,
+        "llm_model": settings.llm_model,
+    }
+
+    # Test Tavily
+    try:
+        agent = BaseAgent("debug")
+        hits = agent.web_search("startup opportunity software 2025", max_results=2)
+        results["tavily_ok"] = True
+        results["tavily_results"] = len(hits)
+        results["tavily_sample"] = hits[0].get("title", "") if hits else ""
+    except Exception as e:
+        results["tavily_ok"] = False
+        results["tavily_error"] = str(e)
+
+    # Test LLM
+    try:
+        agent2 = BaseAgent("debug")
+        resp = agent2._call(
+            [{"role": "user", "content": "Reply with exactly: OK"}],
+            max_tokens=10,
+        )
+        results["llm_ok"] = True
+        results["llm_response"] = resp.strip()
+    except Exception as e:
+        results["llm_ok"] = False
+        results["llm_error"] = str(e)
+
+    return results
+
+
 @router.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
     orch = get_orchestrator()
