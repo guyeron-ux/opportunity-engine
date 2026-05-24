@@ -24,7 +24,9 @@ At the END of your reply only, append action tags when relevant:
   Do NOT wait for "perfect" certainty — if the user asked for a rerate, always append it.
 - Append `[SUGGEST_EDIT:{{"field": "value"}}]` to suggest a specific field change (e.g., title, notes).
 
-Respond conversationally but with analytical rigor. Be direct and insightful."""
+Be extremely concise. Default to 2-4 sentences maximum. Use bullet points only when listing 3+ items.
+No preamble, no restating the question, no sign-off. Lead with the insight.
+Only expand if the user explicitly asks for more detail."""
 
 
 class ChatAgent(BaseAgent):
