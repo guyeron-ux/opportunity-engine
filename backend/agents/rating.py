@@ -55,13 +55,34 @@ Scoring rubric (0-100 each):
    project44, FourKites, Transplace; manufacturing ops → Plex, Arena, Epicor; HR → Rippling,
    Workday; proptech → Yardi, RealPage; legal → Clio, Relativity; etc.
 
+   INCUMBENT AI LAYERS — apply SECOND:
+   In 2025-2026, "AI-native" is NOT a differentiator — it is table stakes. Every major platform
+   (Salesforce Einstein, Microsoft Copilot, SAP AI, Workday AI, Qualtrics XM/AI, Medallia Athena,
+   Adobe Sensei, Oracle AI) is actively shipping AI features. If the analysis shows multiple
+   major incumbents have already launched AI products in this exact space, that substantially
+   raises the competitive bar and must be reflected in the score.
+   - If 3+ major platforms have shipped AI features here: cap CI at 55, regardless of other factors
+   - If 1-2 major platforms have shipped AI features here: factor into analysis, likely 45-65 range
+   - If the startup's wedge is purely "AI on top of existing data with no unique moat": treat as
+     build-vs-buy trivial, cap CI at 40
+
+   BUILD-VS-BUY THREAT — apply THIRD:
+   If the report indicates enterprises could replicate 80% of the solution in <3 months using
+   Claude/GPT APIs + internal engineering with no regulatory or data moat, that is a structural
+   risk that depresses CI:
+   - Trivially replicable (pure LLM wrapper, no unique data/workflow): cap CI at 35
+   - Moderately replicable (some integration work, but doable in 6 months): max CI 55
+   - Defensible moat (unique data, regulatory, workflow embedding, distribution): no cap
+
    90-100: Fragmented or sleeping-giant market — domain-specific incumbents are legacy, slow, or
            mis-aligned. A focused challenger can own a defensible niche with clear rationale.
-   70-89:  Domain-specific incumbents named with clear weaknesses identified and exploitable angles
-   50-69:  Mix of domain and generic competitors; some actionable insight present
-   30-49:  Mostly generic tools cited; shallow analysis or dominant moats with no clear angle
-   0-29:   Pure generic tool list (Monday/Asana/SAP only) OR all incumbents have deep moats and
-           no differentiation path identified
+           Incumbent AI threat is absent or minimal. Build-vs-buy is non-trivial.
+   70-89:  Domain-specific incumbents named with clear weaknesses. Limited incumbent AI overlap.
+           Build-vs-buy requires significant proprietary integration or data.
+   50-69:  Mix of domain and generic competitors; some actionable insight; limited incumbent AI risk
+   30-49:  Mostly generic tools; OR incumbent AI already shipped; OR trivial build-vs-buy
+   0-29:   Pure generic tool list; OR multiple major incumbents shipping AI in this exact space;
+           OR near-trivial DIY with LLM APIs
 
 5. MONETIZATION POTENTIAL (MP) — weight 15%
    90-100: Proven models with strong unit economics signals — clear path to $100M+ ARR
@@ -145,6 +166,16 @@ vertical, named explicitly, should CI-score 75–90.
 Scores below 50 composite reflect opportunities that are genuinely weak across multiple factors.
 Do NOT reflexively score conservatively — under-scoring strong opportunities is as inaccurate as
 over-scoring weak ones. Aim for calibrated realism, not conservative pessimism.
+
+AI-NATIVE FRAMING — critical note:
+Do NOT reward "AI-native" as a unique differentiator. By 2025-2026, every meaningful software
+product has AI features. The question is: does the startup have a moat that large incumbents and
+internal engineering teams cannot easily replicate? Score the actual wedge:
+- Unique proprietary data that gets better with usage → defensible
+- Deep workflow embedding with switching costs → defensible
+- Regulatory or compliance moat requiring specialized domain expertise → defensible
+- Domain distribution advantage (existing customer relationships, channel) → defensible
+- Pure "AI wrapper" on a prompt with no data or workflow moat → NOT defensible, score accordingly
 """
 
 
@@ -166,6 +197,9 @@ class RatingAgent(BaseAgent):
         if len(competitors) < 1:
             self._log.warning("Rating: insufficient competitors for '%s' (%d)", title, len(competitors))
 
+        incumbent_ai_threat = report.get("incumbent_ai_threat", "")
+        build_vs_buy_risk = report.get("build_vs_buy_risk", "")
+
         scoring_prompt = f"""Score this startup opportunity based on the rubric.
 
 **Opportunity Report:**
@@ -176,6 +210,8 @@ Industry Market Size: {report.get('market_size_estimate', 'Unknown')}
 Solution TAM (if pre-derived): {report.get('solution_tam_estimate', 'derive from data')}
 Market Growth: {report.get('market_growth_rate', 'Unknown')}
 Competitors: {report.get('competitors', [])}
+Incumbent AI Threat: {incumbent_ai_threat or 'Not assessed'}
+Build-vs-Buy Risk: {build_vs_buy_risk or 'Not assessed'}
 Monetization Models: {models}
 Solution Hypothesis: {report.get('solution_hypothesis', '')}
 Sources: {sources}
@@ -316,6 +352,8 @@ Return valid JSON only, no markdown."""
                 ms_data.get("solution_tam", "")),
             market_growth_rate=report.get("market_growth_rate", ""),
             competitors=report.get("competitors", []),
+            incumbent_ai_threat=report.get("incumbent_ai_threat", ""),
+            build_vs_buy_risk=report.get("build_vs_buy_risk", ""),
             monetization_models=report.get("monetization_models", []),
             solution_hypothesis=report.get("solution_hypothesis", ""),
             sources=report.get("sources", []),

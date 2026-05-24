@@ -1,28 +1,39 @@
 from __future__ import annotations
 from backend.agents.base import BaseAgent
 
-SYSTEM_PROMPT = """You are a community signal scout specialized in finding authentic startup opportunities
-from developer and entrepreneur communities.
+SYSTEM_PROMPT = """You are a community signal scout hunting for authentic, under-the-radar startup opportunities
+expressed by practitioners — not observers.
 
-Your task is to scan Reddit, Hacker News, Indie Hackers, Product Hunt, and similar forums to find
-genuine pain points expressed by real users — especially recurring complaints, "I wish someone would
-build X" requests, and failed product attempts that reveal persistent unmet needs.
+Go beyond Reddit and Hacker News. The most valuable signals come from people who do the work:
+operators, field technicians, compliance officers, supply chain managers, clinicians, attorneys.
+They complain in professional forums, LinkedIn threads, specialized Slack communities, and niche subreddits.
 
-Assess each signal:
-1. How often / strongly is this pain expressed?
-2. Is the affected segment large enough to build a business?
-3. Are existing solutions clearly inadequate?
-4. Signal strength (1-5)
+What makes a strong signal:
+- A recurring complaint that gets upvoted across multiple threads, months apart
+- A workaround so painful that people describe it in detail ("we export to Excel, then manually cross-reference...")
+- "I can't believe there's no software for X" in a specific operational context
+- A failed product attempt that reveals the pain persisted after the company died
+- A job posting that describes a role that should be automated but isn't
 
-Only return signals with signal_strength >= 3.
+What makes a weak signal:
+- Generic developer tool frustration (too horizontal)
+- Consumer app complaints
+- Anything where the commenter links to 3 existing solutions they just haven't tried
+
+Signal strength (1-5): only return >= 3.
 """
 
 SEARCH_QUERIES = [
-    'site:reddit.com "I wish there was" OR "why doesn\'t someone build" startup tool 2025',
-    "site:news.ycombinator.com ask HN pain point problem software 2025",
-    "indie hackers problem validation market gap 2025",
-    "reddit developer frustration tool missing workflow 2025",
-    "product hunt failed startup gap opportunity 2025",
+    # Specific operational subreddits, not just r/startups
+    'site:reddit.com (r/operations OR r/supplychain OR r/manufacturing OR r/healthcareit OR r/legaladvice) "wish there was" OR "no software" OR "manually" 2025',
+    # Professional frustration with no obvious solution
+    '"no tool" OR "no software" OR "still manually" professional workflow enterprise frustration 2025',
+    # Indie hackers niche discovery
+    "indie hackers niche market underserved no competition validated pain 2025",
+    # HN threads where people describe operational pain without finding solutions
+    'site:news.ycombinator.com "Ask HN" "no good solution" OR "nothing exists" OR "build this" specific tool 2025',
+    # LinkedIn practitioner complaints (often surface domain-specific operational pain)
+    "LinkedIn practitioner operator frustrated manual process industry specific 2025",
 ]
 
 
@@ -42,18 +53,21 @@ class ScoutCommunityAgent(BaseAgent):
                 f"Source: {r.get('url', '')}\nTitle: {r.get('title', '')}\nContent: {r.get('content', '')[:600]}"
                 for r in results
             )
-            prompt = f"""Analyze these community posts and extract startup opportunity signals from authentic user pain points.
+            prompt = f"""Analyze these community posts and extract startup opportunity signals from authentic practitioner pain.
 
 {context}
 
+Look for recurring, specific operational pain described by people who do the work — not observers or journalists.
+Ignore complaints where multiple existing solutions are obvious. Focus on the gap between the pain and what's available.
+
 Return a JSON array. Each signal:
 {{
-  "title": "brief opportunity title",
-  "pain_point": "specific pain point in user's own words",
-  "affected_segment": "who is affected",
+  "title": "specific opportunity title — name the domain and the operational gap",
+  "pain_point": "the pain in the practitioner's own words if possible — specific, not abstract",
+  "affected_segment": "who specifically (job role, industry, company size)",
   "signal_strength": 1-5,
+  "recurrence_evidence": "how widespread or repeated this pain appears across sources",
   "source_urls": ["url1"],
-  "community_evidence": "how widespread/frequent this pain appears",
   "query_used": "{query}"
 }}
 

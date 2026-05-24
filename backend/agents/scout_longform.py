@@ -1,29 +1,39 @@
 from __future__ import annotations
 from backend.agents.base import BaseAgent
 
-SYSTEM_PROMPT = """You are a long-form content scout specialized in extracting startup opportunity signals
-from in-depth analysis, research reports, and thought leadership content.
+SYSTEM_PROMPT = """You are a long-form content scout specialized in identifying non-obvious startup opportunities
+from deep research, investor theses, and cross-domain analysis.
 
-Your task is to analyze articles from Medium, TechCrunch, VentureBeat, Substack newsletters,
-CB Insights reports, a16z blog, and similar long-form sources.
+Your edge is connecting dots others miss:
+- A technology platform maturing in one sector that could be the wedge in a totally different one
+- A macro or demographic shift that changes cost structures or creates a new buyer with new budget
+- A regulatory change that makes a previously unviable business model newly viable
+- Academic or R&D advances 12-24 months from commercial application
+- A VC thesis that names an emerging category before it's obvious
+- An industry segment that is economically outsized relative to its software investment
 
-Look for:
-- Detailed market analysis identifying gaps
-- Industry expert opinions on emerging needs
-- Deep dives into specific sector pain points
-- Research-backed market opportunity identification
-- "White space" analyses by investors/analysts
+You are NOT looking for:
+- Already-crowded AI categories (AI writing, AI customer support, AI coding assistants)
+- Opportunities where a16z or Sequoia has already announced a thesis and funded 5 companies
+- Generic "digital transformation" of any horizontal process
 
-Signal strength (1-5): prioritize signals with data backing and expert authority.
-Only return signals with signal_strength >= 3.
+Signal quality beats quantity. One sharp, non-obvious signal is worth ten obvious ones.
+Signal strength (1-5): only return >= 3.
 """
 
 SEARCH_QUERIES = [
-    "TechCrunch VentureBeat market opportunity startup gap analysis 2025",
-    "a16z andreessen horowitz market thesis opportunity 2025",
-    "CB Insights emerging market gap disruption report 2025",
-    "Substack newsletter startup opportunity whitespace 2025",
-    "Medium deep dive market analysis unmet need B2B 2025",
+    # VC investment in unusual, niche verticals — signals validated pain
+    "venture capital investment niche vertical underrated overlooked sector 2025",
+    # Cross-industry technology transfer analyses by researchers or analysts
+    "technology transfer methodology from one industry applied another sector startup 2025",
+    # Macro/regulatory shifts opening new market windows
+    "policy change regulation opens new market category startup opportunity 2025 2026",
+    # Sectors large in economic weight, small in software penetration
+    "large industry low software penetration digital gap opportunity 2025",
+    # Emerging research nearing commercial inflection
+    "research commercialize near-term application startup technology 2024 2025",
+    # Infrastructure shifts that remove historical barriers
+    "infrastructure cost collapse enables new business model previously impossible 2025",
 ]
 
 
@@ -43,19 +53,23 @@ class ScoutLongformAgent(BaseAgent):
                 f"Source: {r.get('url', '')}\nTitle: {r.get('title', '')}\nContent: {r.get('content', '')[:800]}"
                 for r in results
             )
-            prompt = f"""Analyze these long-form articles and extract startup opportunity signals supported by research or expert analysis.
+            prompt = f"""Analyze these long-form articles and extract non-obvious startup opportunity signals.
 
 {context}
 
+Ask: does this signal connect trends or technology from one domain with pain from another?
+Is there a cross-industry insight here that most generalist analysts would miss?
+
 Return a JSON array. Each signal:
 {{
-  "title": "brief opportunity title",
-  "pain_point": "specific pain point with evidence",
-  "affected_segment": "who is affected and estimated size",
+  "title": "specific opportunity title — name the domain and the cross-domain wedge if applicable",
+  "pain_point": "specific pain point with evidence, ideally quantified",
+  "affected_segment": "who is affected and estimated economic scale",
   "signal_strength": 1-5,
+  "cross_domain_angle": "what insight from another domain or sector applies here (if any)",
   "source_urls": ["url1"],
   "data_points": ["any stats or research cited"],
-  "expert_signals": "any VC/analyst endorsement",
+  "expert_signals": "any VC/analyst/researcher endorsement",
   "query_used": "{query}"
 }}
 

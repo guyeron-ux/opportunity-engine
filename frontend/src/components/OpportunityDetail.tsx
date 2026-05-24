@@ -215,8 +215,11 @@ export function OpportunityDetail({ opp, onClose, onUpdate }: Props) {
               <div className="space-y-2">
                 {opp.research.competitors.map((c, i) => (
                   <div key={i} className="bg-gray-800 rounded-lg p-3">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-semibold">{c.name}</span>
+                      {c.raised && (
+                        <span className="text-xs text-emerald-500 font-mono">{c.raised}</span>
+                      )}
                       {c.url && (
                         <a href={c.url} target="_blank" rel="noreferrer" className="text-xs text-violet-400 hover:underline">↗</a>
                       )}
@@ -225,6 +228,22 @@ export function OpportunityDetail({ opp, onClose, onUpdate }: Props) {
                   </div>
                 ))}
               </div>
+              {(opp.research.incumbent_ai_threat || opp.research.build_vs_buy_risk) && (
+                <div className="mt-3 space-y-2">
+                  {opp.research.incumbent_ai_threat && (
+                    <div className="bg-orange-950/20 border border-orange-800/30 rounded-lg p-3">
+                      <p className="text-xs font-semibold text-orange-400 mb-1">Incumbent AI Threat</p>
+                      <p className="text-xs text-gray-300 leading-relaxed">{opp.research.incumbent_ai_threat}</p>
+                    </div>
+                  )}
+                  {opp.research.build_vs_buy_risk && (
+                    <div className="bg-yellow-950/20 border border-yellow-800/30 rounded-lg p-3">
+                      <p className="text-xs font-semibold text-yellow-400 mb-1">Build-vs-Buy Risk</p>
+                      <p className="text-xs text-gray-300 leading-relaxed">{opp.research.build_vs_buy_risk}</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </section>
           )}
 

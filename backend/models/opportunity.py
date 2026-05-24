@@ -57,6 +57,8 @@ class ResearchData(BaseModel):
     tam_derivation: str = ""
     market_growth_rate: str = ""
     competitors: list[dict] = []
+    incumbent_ai_threat: str = ""
+    build_vs_buy_risk: str = ""
     monetization_models: list[str] = []
     solution_hypothesis: str = ""
     sources: list[str] = []

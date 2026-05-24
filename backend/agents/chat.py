@@ -72,6 +72,8 @@ PAIN POINT: {res.pain_point_summary}
 AFFECTED SEGMENTS: {', '.join(res.affected_segments)}
 MARKET SIZE: {res.market_size_estimate} | GROWTH: {res.market_growth_rate}
 COMPETITORS: {competitors}
+INCUMBENT AI THREAT: {res.incumbent_ai_threat or 'Not assessed'}
+BUILD-VS-BUY RISK: {res.build_vs_buy_risk or 'Not assessed'}
 MONETIZATION: {monetization}
 SOLUTION HYPOTHESIS: {res.solution_hypothesis}
 TAGS: {tags}

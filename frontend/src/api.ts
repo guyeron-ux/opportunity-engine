@@ -41,7 +41,9 @@ export interface ResearchData {
   solution_tam_estimate: string
   tam_derivation: string
   market_growth_rate: string
-  competitors: Array<{ name: string; weakness: string; url?: string }>
+  competitors: Array<{ name: string; raised?: string; weakness: string; url?: string }>
+  incumbent_ai_threat?: string
+  build_vs_buy_risk?: string
   monetization_models: string[]
   solution_hypothesis: string
   sources: string[]
