@@ -260,6 +260,26 @@ def trigger_cycle():
     return {"ok": True, "message": "Cycle started"}
 
 
+class TargetedCycleRequest(BaseModel):
+    domains: list[str] = ["energy", "manufacturing"]
+    target_per_domain: int = 5
+    target_score: float = 75.0
+
+
+@router.post("/cycle/targeted")
+def trigger_targeted_cycle(body: TargetedCycleRequest):
+    orch = get_orchestrator()
+    if orch._cycle_running:
+        return {"ok": False, "message": "Cycle already running"}
+    thread = threading.Thread(
+        target=orch.targeted_cycle,
+        args=(body.domains, body.target_per_domain, body.target_score),
+        daemon=True,
+    )
+    thread.start()
+    return {"ok": True, "message": f"Targeted cycle started for domains: {body.domains}"}
+
+
 @router.get("/cycle/status")
 def cycle_status():
     return get_orchestrator().get_status()

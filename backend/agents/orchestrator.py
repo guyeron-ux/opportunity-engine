@@ -520,6 +520,96 @@ class Orchestrator:
         except Exception as e:
             log.error("deep_research_one error for %s: %s", opp_id, e, exc_info=True)
 
+    # --- Targeted domain cycle ---
+
+    def targeted_cycle(self, domains: list[str], target_per_domain: int = 5, target_score: float = 75.0):
+        """Run a targeted discovery cycle for specific domains until target_per_domain qualifying opps found."""
+        if self._cycle_running:
+            return False
+        self._cycle_running = True
+        self._current_cycle_id = datetime.utcnow().strftime("%Y%m%d-%H%M")
+        update_db_settings({"cycle_running": True, "last_cycle_run": datetime.utcnow().isoformat()})
+        asyncio.run(self._async_targeted_cycle(domains, target_per_domain, target_score))
+        return True
+
+    async def _async_targeted_cycle(self, domains: list[str], target_per_domain: int, target_score: float):
+        from backend.agents.scout_targeted import TargetedScoutAgent
+        from backend.models.database import _title_similarity, load_db
+        try:
+            await self._broadcast("cycle_start", {"timestamp": datetime.utcnow().isoformat(), "mode": "targeted", "domains": domains})
+            log.info("=== Targeted cycle started: domains=%s target=%d score>=%.0f ===", domains, target_per_domain, target_score)
+
+            loop = asyncio.get_event_loop()
+            scout = TargetedScoutAgent()
+            all_new: list = []
+
+            for domain in domains:
+                qualifying: list = []
+                seen_titles: list[str] = []
+
+                # Load existing titles once per domain for dedup
+                db = load_db()
+                existing_titles = [o.title for o in db.opportunities]
+
+                def _is_dup(title: str) -> bool:
+                    threshold = 0.60
+                    return any(_title_similarity(title, t) >= threshold for t in seen_titles + existing_titles)
+
+                # Run scout queries for this domain
+                raw_signals = await loop.run_in_executor(None, scout.run_domain, domain)
+                log.info("Targeted[%s]: %d raw signals before dedup", domain, len(raw_signals))
+                await self._broadcast("scouts_done", {"domain": domain, "signal_count": len(raw_signals)})
+
+                # Process signals until we have enough qualifying ones
+                for signal in raw_signals:
+                    if len(qualifying) >= target_per_domain:
+                        break
+
+                    title = signal.get("title", "").strip()
+                    if not title or _is_dup(title):
+                        continue
+                    seen_titles.append(title)
+
+                    try:
+                        report = await loop.run_in_executor(None, self._analyst.analyze, signal)
+                        opp = await loop.run_in_executor(None, self._rater.rate, report)
+                        if opp and opp.composite_score >= target_score and not _is_pure_b2g(opp):
+                            saved = add_opportunity(opp)
+                            qualifying.append(saved)
+                            all_new.append(saved)
+                            await self._broadcast("opportunity_added", {
+                                "id": opp.id,
+                                "title": opp.title,
+                                "score": opp.composite_score,
+                                "type": opp.classification.type,
+                                "go_to_market": opp.classification.go_to_market,
+                                "domain": domain,
+                            })
+                            log.info("Targeted[%s]: qualifying #%d [%.1f] %s", domain, len(qualifying), opp.composite_score, opp.title)
+                        elif opp:
+                            log.info("Targeted[%s]: below threshold [%.1f] %s", domain, opp.composite_score, opp.title)
+                    except Exception as e:
+                        log.error("Targeted[%s]: error on signal '%s': %s", domain, title, e)
+
+                log.info("Targeted[%s]: found %d/%d qualifying opportunities", domain, len(qualifying), target_per_domain)
+                await self._broadcast("batch_done", {
+                    "domain": domain,
+                    "qualifying": len(qualifying),
+                    "target": target_per_domain,
+                    "new_opportunities": len(all_new),
+                })
+
+            summary = self._generate_summary(all_new)
+            update_db_settings({"cycle_running": False, "last_cycle_summary": summary})
+            await self._broadcast("cycle_done", {"new_opportunities": len(all_new), "summary": summary, "domains": domains})
+            log.info("=== Targeted cycle complete: %d total new opportunities ===", len(all_new))
+        except Exception as e:
+            log.error("Targeted cycle error: %s", e, exc_info=True)
+            update_db_settings({"cycle_running": False})
+            await self._broadcast("cycle_error", {"error": str(e)})
+        finally:
+            self._cycle_running = False
+
     # --- Upload processing ---
 
     def process_upload(self, text: str, filename: str):
