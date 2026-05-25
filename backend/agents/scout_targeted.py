@@ -29,24 +29,20 @@ NOT looking for:
 Signal strength (1-5): only return >= 3. Be demanding — a 5 requires: quantified pain, real buyers identified, defensible wedge, non-obvious insight.""",
 
         "queries": [
-            "electric grid interconnection queue permitting backlog software startup opportunity 2025",
-            "curtailment renewable energy wasted electricity grid congestion startup solution 2025",
-            "distributed energy resource DERMS aggregation small utility cooperative startup 2025",
-            "industrial process heat decarbonization startup hard-to-abate cement steel chemicals 2025",
-            "high temperature heat pump electrification factory industrial startup 2025",
-            "green hydrogen electrolyzer operations software maintenance startup 2025",
-            "battery energy storage BESS degradation warranty asset management startup 2025",
-            "offshore wind operations maintenance logistics software remote inspection startup 2025",
-            "coal plant decommission repurpose stranded asset brownfield energy startup 2025",
-            "nuclear power plant software modernization aging infrastructure startup 2025",
-            "small modular reactor SMR supply chain qualification startup 2025",
-            "energy community virtual net metering peer-to-peer trading software startup 2025",
-            "carbon border adjustment CBAM compliance manufacturing energy startup 2025",
-            "capacity market auction bidding optimization software startup 2025",
-            "long duration energy storage flow battery compressed air thermal startup market 2025",
-            "industrial demand response curtailment automation startup commercial industrial 2025",
-            "power purchase agreement PPA structuring software corporate buyer startup 2025",
-            "grid interconnection study software automation renewable developer startup 2025",
+            # Grid interconnection: 2,000+ GW stuck in queues, developers flying blind on withdrawal risk
+            "renewable energy interconnection queue position risk modeling software developer 2025",
+            # Industrial heat: 20% of global energy use, almost no software addresses it
+            "industrial process heat decarbonization cement steel glass hard-to-abate software gap 2025",
+            # BESS lifecycle: $50B+ deployed with no purpose-built asset management stack
+            "battery energy storage system BESS degradation warranty revenue optimization software 2025",
+            # Offshore wind O&M: logistics nightmare, ~$25B/yr cost, no dominant software player
+            "offshore wind operations maintenance vessel scheduling technician dispatch software 2025",
+            # Capacity markets: VPPs and aggregators losing revenue to manual bidding errors
+            "virtual power plant capacity market ancillary services bidding optimization software 2025",
+            # CBAM: EU carbon border tax forces US/Asian exporters to quantify embedded carbon
+            "carbon border adjustment mechanism CBAM embedded carbon calculation compliance software 2025",
+            # Brownfield: 250+ US coal plants closing, grid connections worth $millions, no repurposing software
+            "coal plant decommissioning brownfield repurpose grid connection valuation software 2025",
         ],
     },
 
@@ -73,24 +69,20 @@ NOT looking for:
 Signal strength (1-5): only return >= 3. Be demanding — a 5 requires: quantified pain, specific buyer segment, real defensible wedge, non-obvious angle.""",
 
         "queries": [
-            "tier 2 tier 3 supplier mapping financial health monitoring startup OEM risk 2025",
-            "specialty chemical supply chain single source dependency concentration risk startup 2025",
-            "rare earth critical mineral supply chain traceability software startup manufacturer 2025",
-            "nearshoring reshoring site selection supplier discovery intelligence startup 2025",
-            "contract manufacturer capacity visibility demand matching software startup 2025",
-            "legacy CNC machine retrofit IoT sensor data brownfield manufacturing startup 2025",
-            "predictive quality scrap rework reduction manufacturing AI startup 2025",
-            "industrial metrology calibration data management software startup factory 2025",
-            "MRO maintenance repair operations inventory procurement inefficiency startup 2025",
-            "industrial spare parts supply chain obsolescence management startup manufacturer 2025",
-            "PFAS restriction chemical supply chain compliance reporting software manufacturer 2025",
-            "conflict minerals responsible sourcing CMRT automation startup 2025",
-            "food safety supply chain traceability FSMA 204 compliance software startup 2025",
-            "manufacturing workforce upskilling automation reskilling gap software startup 2025",
-            "frontline worker knowledge capture tribal knowledge manufacturing startup 2025",
-            "semiconductor supply chain alternate source qualification startup fabless 2025",
-            "cold chain excursion monitoring pharmaceutical biologics logistics startup 2025",
-            "active pharmaceutical ingredient API supply chain risk China India dependency startup 2025",
+            # Sub-tier supplier risk: OEMs only watch tier-1; tier-2/3 failures cause the actual disruptions
+            "tier 2 tier 3 supplier financial distress early warning monitoring OEM manufacturing 2025",
+            # MRO: $700B market, 60%+ unplanned spend, almost no modern procurement software
+            "MRO maintenance repair operations unplanned spend procurement optimization manufacturer 2025",
+            # Reshoring gap: manufacturers moving from China can't find qualified alternative suppliers
+            "reshoring nearshoring supplier qualification discovery platform manufacturer US Mexico 2025",
+            # Legacy machine data: 80% of factory equipment has no connectivity, operators can't see quality data
+            "legacy factory equipment brownfield data capture quality scrap retrofit manufacturer 2025",
+            # PFAS compliance: EPA PFAS rules forcing manufacturers to trace chemicals through supply chain
+            "PFAS forever chemicals supply chain compliance material substitution manufacturer 2025",
+            # Contract mfg visibility: CMOs have no software to share capacity; customers can't plan
+            "contract manufacturer capacity planning visibility demand signal sharing software 2025",
+            # API pharma: 80%+ of active pharma ingredients sourced from China/India, no monitoring tool
+            "active pharmaceutical ingredient API supply chain single source risk monitoring software 2025",
         ],
     },
 }
