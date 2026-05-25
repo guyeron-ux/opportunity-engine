@@ -290,7 +290,7 @@ Return valid JSON only, no markdown."""
             scored = self._call_json(
                 [{"role": "user", "content": scoring_prompt}],
                 system=SYSTEM_PROMPT,
-                max_tokens=4000,
+                max_tokens=6000,
             )
         except Exception as e:
             self._log.error("Rating failed for '%s': %s", title, e)

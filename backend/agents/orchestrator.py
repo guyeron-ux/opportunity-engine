@@ -536,8 +536,12 @@ class Orchestrator:
         from backend.agents.scout_targeted import TargetedScoutAgent
         from backend.models.database import _title_similarity, load_db
         try:
-            await self._broadcast("cycle_start", {"timestamp": datetime.utcnow().isoformat(), "mode": "targeted", "domains": domains})
-            log.info("=== Targeted cycle started: domains=%s target=%d score>=%.0f ===", domains, target_per_domain, target_score)
+            await self._broadcast("cycle_start", {
+                "timestamp": datetime.utcnow().isoformat(),
+                "mode": "targeted",
+                "domains": domains,
+            })
+            log.info("=== Targeted cycle: domains=%s target=%d score>=%.0f ===", domains, target_per_domain, target_score)
 
             loop = asyncio.get_event_loop()
             scout = TargetedScoutAgent()
@@ -547,61 +551,83 @@ class Orchestrator:
                 qualifying: list = []
                 seen_titles: list[str] = []
 
-                # Load existing titles once per domain for dedup
+                # Snapshot existing titles for dedup (refresh per domain)
                 db = load_db()
                 existing_titles = [o.title for o in db.opportunities]
 
                 def _is_dup(title: str) -> bool:
-                    threshold = 0.60
-                    return any(_title_similarity(title, t) >= threshold for t in seen_titles + existing_titles)
+                    return any(
+                        _title_similarity(title, t) >= 0.60
+                        for t in seen_titles + existing_titles
+                    )
 
-                # Run scout queries for this domain
-                raw_signals = await loop.run_in_executor(None, scout.run_domain, domain)
-                log.info("Targeted[%s]: %d raw signals before dedup", domain, len(raw_signals))
-                await self._broadcast("scouts_done", {"domain": domain, "signal_count": len(raw_signals)})
+                queries = scout.get_queries(domain)
+                log.info("Targeted[%s]: %d queries, stopping at %d qualifying", domain, len(queries), target_per_domain)
 
-                # Process signals until we have enough qualifying ones
-                for signal in raw_signals:
+                for q_idx, query in enumerate(queries):
                     if len(qualifying) >= target_per_domain:
+                        log.info("Targeted[%s]: target reached after %d queries", domain, q_idx)
                         break
 
-                    title = signal.get("title", "").strip()
-                    if not title or _is_dup(title):
-                        continue
-                    seen_titles.append(title)
+                    log.info("Targeted[%s] query %d/%d: %s", domain, q_idx + 1, len(queries), query[:60])
+                    # Scout one query (web search + LLM extraction)
+                    signals = await loop.run_in_executor(None, scout.query_signals, query, domain)
+                    log.info("Targeted[%s]: query returned %d signals", domain, len(signals))
 
-                    try:
-                        report = await loop.run_in_executor(None, self._analyst.analyze, signal)
-                        opp = await loop.run_in_executor(None, self._rater.rate, report)
-                        if opp and opp.composite_score >= target_score and not _is_pure_b2g(opp):
-                            saved = add_opportunity(opp)
-                            qualifying.append(saved)
-                            all_new.append(saved)
-                            await self._broadcast("opportunity_added", {
-                                "id": opp.id,
-                                "title": opp.title,
-                                "score": opp.composite_score,
-                                "type": opp.classification.type,
-                                "go_to_market": opp.classification.go_to_market,
-                                "domain": domain,
-                            })
-                            log.info("Targeted[%s]: qualifying #%d [%.1f] %s", domain, len(qualifying), opp.composite_score, opp.title)
-                        elif opp:
-                            log.info("Targeted[%s]: below threshold [%.1f] %s", domain, opp.composite_score, opp.title)
-                    except Exception as e:
-                        log.error("Targeted[%s]: error on signal '%s': %s", domain, title, e)
+                    # Immediately process each signal — stop as soon as we have enough
+                    for signal in signals:
+                        if len(qualifying) >= target_per_domain:
+                            break
 
-                log.info("Targeted[%s]: found %d/%d qualifying opportunities", domain, len(qualifying), target_per_domain)
-                await self._broadcast("batch_done", {
-                    "domain": domain,
-                    "qualifying": len(qualifying),
-                    "target": target_per_domain,
-                    "new_opportunities": len(all_new),
-                })
+                        title = signal.get("title", "").strip()
+                        if not title or _is_dup(title):
+                            log.info("Targeted[%s]: skipping dup/blank '%s'", domain, title[:50])
+                            continue
+                        seen_titles.append(title)
+
+                        try:
+                            report = await loop.run_in_executor(None, self._analyst.analyze, signal)
+                            opp = await loop.run_in_executor(None, self._rater.rate, report)
+                            if opp is None:
+                                log.info("Targeted[%s]: rater returned None for '%s'", domain, title[:50])
+                                continue
+                            opp.cycle_id = self._current_cycle_id
+                            score = opp.composite_score
+                            if score >= target_score and not _is_pure_b2g(opp):
+                                saved = add_opportunity(opp)
+                                qualifying.append(saved)
+                                all_new.append(saved)
+                                await self._broadcast("opportunity_added", {
+                                    "id": opp.id,
+                                    "title": opp.title,
+                                    "score": score,
+                                    "type": opp.classification.type,
+                                    "go_to_market": opp.classification.go_to_market,
+                                    "domain": domain,
+                                })
+                                log.info("Targeted[%s]: ✓ #%d [%.1f] %s", domain, len(qualifying), score, opp.title[:60])
+                            else:
+                                log.info("Targeted[%s]: ✗ [%.1f] %s", domain, score, title[:50])
+                        except Exception as e:
+                            log.error("Targeted[%s]: error on '%s': %s", domain, title[:50], e)
+
+                    # Checkpoint after each query
+                    await self._broadcast("batch_done", {
+                        "domain": domain,
+                        "qualifying": len(qualifying),
+                        "target": target_per_domain,
+                        "queries_run": q_idx + 1,
+                    })
+
+                log.info("Targeted[%s]: finished — %d/%d qualifying", domain, len(qualifying), target_per_domain)
 
             summary = self._generate_summary(all_new)
             update_db_settings({"cycle_running": False, "last_cycle_summary": summary})
-            await self._broadcast("cycle_done", {"new_opportunities": len(all_new), "summary": summary, "domains": domains})
+            await self._broadcast("cycle_done", {
+                "new_opportunities": len(all_new),
+                "summary": summary,
+                "domains": domains,
+            })
             log.info("=== Targeted cycle complete: %d total new opportunities ===", len(all_new))
         except Exception as e:
             log.error("Targeted cycle error: %s", e, exc_info=True)

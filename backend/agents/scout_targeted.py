@@ -102,31 +102,24 @@ class TargetedScoutAgent(BaseAgent):
     def __init__(self):
         super().__init__("scouts")
 
-    def run_domain(self, domain: str) -> list[dict]:
-        """Run all queries for a domain and return extracted signals."""
+    def query_signals(self, query: str, domain: str) -> list[dict]:
+        """Run a single query for a domain and return extracted signals."""
         config = DOMAINS.get(domain)
         if not config:
-            self._log.error("Unknown domain: %s", domain)
+            return []
+        system = config["system"]
+
+        results = self.web_search(query, max_results=5)
+        if not results:
             return []
 
-        system = config["system"]
-        queries = config["queries"]
-        raw_signals: list[dict] = []
+        context = "\n\n".join(
+            f"Source: {r.get('url', '')}\nTitle: {r.get('title', '')}\n"
+            f"Content: {r.get('content', '')[:800]}"
+            for r in results
+        )
 
-        self._log.info("TargetedScout[%s]: running %d queries", domain, len(queries))
-
-        for query in queries:
-            results = self.web_search(query, max_results=5)
-            if not results:
-                continue
-
-            context = "\n\n".join(
-                f"Source: {r.get('url', '')}\nTitle: {r.get('title', '')}\n"
-                f"Content: {r.get('content', '')[:800]}"
-                for r in results
-            )
-
-            prompt = f"""Analyze these articles and extract non-obvious startup opportunity signals in the {domain} sector.
+        prompt = f"""Analyze these articles and extract non-obvious startup opportunity signals in the {domain} sector.
 
 {context}
 
@@ -144,19 +137,20 @@ Return a JSON array. Each signal:
 Only include signals with signal_strength >= 3. Be demanding about quality.
 Return ONLY a valid JSON array. No narration, no markdown, no explanation before or after."""
 
-            try:
-                signals = self._call_json(
-                    [{"role": "user", "content": prompt}],
-                    system=system,
-                    max_tokens=2000,
-                    temperature=0.2,
-                )
-                if isinstance(signals, list):
-                    qualified = [s for s in signals if s.get("signal_strength", 0) >= 3]
-                    raw_signals.extend(qualified)
-                    self._log.info("TargetedScout[%s] query '%s...' → %d signals", domain, query[:50], len(qualified))
-            except Exception as e:
-                self._log.error("TargetedScout[%s] extraction error for '%s': %s", domain, query[:50], e)
+        try:
+            signals = self._call_json(
+                [{"role": "user", "content": prompt}],
+                system=system,
+                max_tokens=2000,
+                temperature=0.2,
+            )
+            if isinstance(signals, list):
+                qualified = [s for s in signals if s.get("signal_strength", 0) >= 3]
+                self._log.info("TargetedScout[%s] '%s...' → %d signals", domain, query[:50], len(qualified))
+                return qualified
+        except Exception as e:
+            self._log.error("TargetedScout[%s] error for '%s': %s", domain, query[:50], e)
+        return []
 
-        self._log.info("TargetedScout[%s]: total %d raw signals", domain, len(raw_signals))
-        return raw_signals
+    def get_queries(self, domain: str) -> list[str]:
+        return DOMAINS.get(domain, {}).get("queries", [])
