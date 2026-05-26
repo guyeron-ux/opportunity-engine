@@ -7,82 +7,42 @@ from backend.agents.base import BaseAgent
 
 DOMAINS: dict[str, dict] = {
     "energy": {
-        "system": """You are a non-obvious startup opportunity scout focused exclusively on ENERGY sector opportunities.
+        "system": """You are a startup opportunity scout focused on the ENERGY sector.
 
-Your edge is finding what most VCs and generalist analysts miss:
-- Grid infrastructure bottlenecks that enable software plays (interconnection queue, permitting, curtailment)
-- Industrial decarbonization in hard-to-abate sectors: cement, steel, chemicals, shipping, agriculture
-- Stranded fossil asset transitions and brownfield repurposing (coal plants → storage/data centers)
-- Behind-the-meter optimization for C&I customers with complex load profiles
-- Supply chain gaps in the clean energy buildout: offshore wind, long-duration storage, nuclear SMRs
-- Regulatory arbitrage from new policy frameworks (IRA tax credits, CBAM, capacity markets, clean hydrogen standards)
-- Data and intelligence layers for grid operators, IPPs, and energy traders
-- Water-energy nexus: industrial water treatment, cooling, desalination
+Look for non-obvious opportunities: grid infrastructure bottlenecks, hard-to-abate industrial decarbonization,
+stranded asset transitions, behind-the-meter optimization, clean energy supply chain gaps,
+new regulatory frameworks, data layers for grid operators and energy traders.
 
-NOT looking for:
-- Basic solar/wind project development or EPC
-- Generic "energy management" dashboards (crowded)
-- EV charging networks (oversaturated)
-- Carbon offset marketplaces
-- Generic ESG reporting tools
-
-Signal strength (1-5): only return >= 3. Be demanding — a 5 requires: quantified pain, real buyers identified, defensible wedge, non-obvious insight.""",
+Signal strength (1-5): only return >= 3. Be demanding — a 5 requires quantified pain, real buyers, defensible wedge.""",
 
         "queries": [
-            # Grid interconnection: 2,000+ GW stuck in queues, developers flying blind on withdrawal risk
-            "renewable energy interconnection queue position risk modeling software developer",
-            # Industrial heat: 20% of global energy use, almost no software addresses it
-            "industrial process heat decarbonization cement steel glass hard-to-abate software gap",
-            # BESS lifecycle: $50B+ deployed with no purpose-built asset management stack
-            "battery energy storage system BESS degradation warranty revenue optimization software",
-            # Offshore wind O&M: logistics nightmare, ~$25B/yr cost, no dominant software player
-            "offshore wind operations maintenance vessel scheduling technician dispatch software",
-            # Capacity markets: VPPs and aggregators losing revenue to manual bidding errors
-            "virtual power plant capacity market ancillary services bidding optimization software",
-            # CBAM: EU carbon border tax forces US/Asian exporters to quantify embedded carbon
-            "carbon border adjustment mechanism CBAM embedded carbon calculation compliance software",
-            # Brownfield: 250+ US coal plants closing, grid connections worth $millions, no repurposing software
-            "coal plant decommissioning brownfield repurpose grid connection valuation software",
+            "renewable energy interconnection queue risk software developers",
+            "industrial heat decarbonization cement steel hard-to-abate software",
+            "battery storage BESS asset management degradation warranty",
+            "offshore wind operations maintenance logistics software gap",
+            "virtual power plant capacity market bidding optimization",
+            "carbon border adjustment CBAM compliance software exporters",
+            "coal plant decommissioning brownfield repurpose grid connection",
         ],
     },
 
     "manufacturing": {
-        "system": """You are a non-obvious startup opportunity scout focused exclusively on MANUFACTURING and SUPPLY CHAIN opportunities.
+        "system": """You are a startup opportunity scout focused on MANUFACTURING and SUPPLY CHAIN.
 
-Your edge is finding what procurement teams, investors, and generalist analysts overlook:
-- Tier 2/3/4 supplier risks invisible to OEM procurement (financial health, geopolitical exposure, single-source concentration)
-- Reshoring/nearshoring creating infrastructure and software gaps with no existing solutions
-- Legacy factory equipment (10-30 years old) with zero software layer, owned by operators who can't afford full replacements
-- Compliance burdens in specialty material supply chains (PFAS, rare earths, conflict minerals, food safety)
-- MRO (maintenance, repair, operations) inefficiency: $700B+ market with almost no modern software
-- Workforce displacement gaps as automation changes required skills but training lags
-- Geopolitical fragility in specific supply chains: semiconductors, specialty chemicals, active pharma ingredients
-- Contract manufacturers with zero visibility into their own capacity and customers' demand
-- Industrial quality control hidden costs: scrap, rework, warranty buried in P&Ls
+Look for non-obvious opportunities: sub-tier supplier risks, reshoring gaps, legacy factory equipment with no software layer,
+specialty material compliance burdens, MRO inefficiency, geopolitical supply chain fragility,
+contract manufacturer visibility gaps, hidden quality control costs.
 
-NOT looking for:
-- Generic supply chain "visibility" platforms (already crowded)
-- Basic WMS or inventory management
-- Generic demand forecasting or ERP modules
-- Standard "Industry 4.0" digital transformation pitches
-
-Signal strength (1-5): only return >= 3. Be demanding — a 5 requires: quantified pain, specific buyer segment, real defensible wedge, non-obvious angle.""",
+Signal strength (1-5): only return >= 3. Be demanding — a 5 requires quantified pain, specific buyers, defensible wedge.""",
 
         "queries": [
-            # Sub-tier supplier risk: OEMs only watch tier-1; tier-2/3 failures cause the actual disruptions
-            "tier 2 tier 3 supplier financial distress early warning monitoring OEM manufacturing",
-            # MRO: $700B market, 60%+ unplanned spend, almost no modern procurement software
-            "MRO maintenance repair operations unplanned spend procurement optimization manufacturer",
-            # Reshoring gap: manufacturers moving from China can't find qualified alternative suppliers
-            "reshoring nearshoring supplier qualification discovery platform manufacturer US Mexico",
-            # Legacy machine data: 80% of factory equipment has no connectivity, operators can't see quality data
-            "legacy factory equipment brownfield data capture quality scrap retrofit manufacturer",
-            # PFAS compliance: EPA PFAS rules forcing manufacturers to trace chemicals through supply chain
-            "PFAS forever chemicals supply chain compliance material substitution manufacturer",
-            # Contract mfg visibility: CMOs have no software to share capacity; customers can't plan
-            "contract manufacturer capacity planning visibility demand signal sharing software",
-            # API pharma: 80%+ of active pharma ingredients sourced from China/India, no monitoring tool
-            "active pharmaceutical ingredient API supply chain single source risk monitoring software",
+            "tier 2 tier 3 supplier financial risk monitoring OEM manufacturing",
+            "MRO maintenance repair operations procurement inefficiency manufacturer",
+            "reshoring supplier qualification discovery platform manufacturer",
+            "legacy factory equipment data capture quality control retrofit",
+            "PFAS supply chain compliance chemical substitution manufacturer",
+            "contract manufacturer capacity visibility demand planning software",
+            "pharmaceutical active ingredient supply chain single source risk",
         ],
     },
 }

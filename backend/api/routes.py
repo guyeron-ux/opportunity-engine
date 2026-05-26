@@ -260,6 +260,26 @@ def trigger_cycle():
     return {"ok": True, "message": "Cycle started"}
 
 
+class GuidedCycleRequest(BaseModel):
+    prompt: str
+    target_count: int = 5
+    target_score: float = 75.0
+
+
+@router.post("/cycle/guided")
+def trigger_guided_cycle(body: GuidedCycleRequest):
+    orch = get_orchestrator()
+    if orch._cycle_running:
+        return {"ok": False, "message": "Cycle already running"}
+    thread = threading.Thread(
+        target=orch.guided_cycle,
+        args=(body.prompt, body.target_count, body.target_score),
+        daemon=True,
+    )
+    thread.start()
+    return {"ok": True, "message": f"Guided cycle started: {body.prompt[:80]}"}
+
+
 class TargetedCycleRequest(BaseModel):
     domains: list[str] = ["energy", "manufacturing"]
     target_per_domain: int = 5

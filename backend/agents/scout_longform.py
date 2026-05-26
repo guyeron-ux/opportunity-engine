@@ -1,8 +1,8 @@
 from __future__ import annotations
 from backend.agents.base import BaseAgent
 
-SYSTEM_PROMPT = """You are a long-form content scout specialized in identifying non-obvious startup opportunities
-from deep research, investor theses, and cross-domain analysis.
+SYSTEM_PROMPT = """You are a long-form content scout identifying non-obvious startup opportunities
+from investor theses, industry research, and cross-domain analysis.
 
 Your edge is connecting dots others miss:
 - A technology platform maturing in one sector that could be the wedge in a totally different one
@@ -12,28 +12,23 @@ Your edge is connecting dots others miss:
 - A VC thesis that names an emerging category before it's obvious
 - An industry segment that is economically outsized relative to its software investment
 
-You are NOT looking for:
-- Already-crowded AI categories (AI writing, AI customer support, AI coding assistants)
-- Opportunities where a16z or Sequoia has already announced a thesis and funded 5 companies
-- Generic "digital transformation" of any horizontal process
-
 Signal quality beats quantity. One sharp, non-obvious signal is worth ten obvious ones.
 Signal strength (1-5): only return >= 3.
 """
 
 SEARCH_QUERIES = [
-    # VC investment in unusual, niche verticals — signals validated pain
-    "venture capital investment niche vertical underrated overlooked sector",
-    # Cross-industry technology transfer analyses by researchers or analysts
-    "technology transfer methodology from one industry applied another sector startup",
-    # Macro/regulatory shifts opening new market windows
-    "policy change regulation opens new market category startup opportunity",
-    # Sectors large in economic weight, small in software penetration
-    "large industry low software penetration digital gap opportunity",
-    # Emerging research nearing commercial inflection
-    "research commercialize near-term application startup technology",
-    # Infrastructure shifts that remove historical barriers
-    "infrastructure cost collapse enables new business model previously impossible",
+    # VC theses in niche verticals
+    "venture capital niche vertical emerging category thesis underserved market",
+    # Cross-sector technology transfer
+    "technology proven sector applied different industry startup opportunity",
+    # Regulatory changes opening new market windows
+    "new regulation policy enforcement creates software compliance requirement industry",
+    # Large industries with primitive software stacks
+    "industry billion dollar market manual process low technology adoption",
+    # Research crossing into commercial application
+    "research technology near commercial viability startup application",
+    # Infrastructure shifts enabling new business models
+    "cost decline commoditization enables new business model startup category",
 ]
 
 

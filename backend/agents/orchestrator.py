@@ -520,6 +520,87 @@ class Orchestrator:
         except Exception as e:
             log.error("deep_research_one error for %s: %s", opp_id, e, exc_info=True)
 
+    # --- Guided cycle (plain-language prompt → LLM generates queries → pipeline) ---
+
+    def guided_cycle(self, prompt: str, target_count: int = 5, target_score: float = 75.0):
+        if self._cycle_running:
+            return False
+        self._cycle_running = True
+        self._current_cycle_id = datetime.utcnow().strftime("%Y%m%d-%H%M")
+        update_db_settings({"cycle_running": True, "last_cycle_run": datetime.utcnow().isoformat()})
+        asyncio.run(self._async_guided_cycle(prompt, target_count, target_score))
+        return True
+
+    async def _async_guided_cycle(self, prompt: str, target_count: int, target_score: float):
+        from backend.agents.scout_guided import GuidedScoutAgent
+        from backend.models.database import _title_similarity, load_db
+        try:
+            await self._broadcast("cycle_start", {
+                "timestamp": datetime.utcnow().isoformat(),
+                "mode": "guided",
+                "prompt": prompt,
+            })
+            log.info("=== Guided cycle: '%s' target=%d score>=%.0f ===", prompt[:60], target_count, target_score)
+
+            loop = asyncio.get_event_loop()
+            scout = GuidedScoutAgent()
+
+            db = load_db()
+            existing_titles = [o.title for o in db.opportunities]
+            seen_titles: list[str] = []
+
+            def _is_dup(title: str) -> bool:
+                return any(_title_similarity(title, t) >= 0.60 for t in seen_titles + existing_titles)
+
+            # Generate queries then run them one at a time
+            queries = await loop.run_in_executor(None, scout.generate_queries, prompt, 7)
+            log.info("Guided cycle: generated %d queries", len(queries))
+            await self._broadcast("scouts_done", {"signal_count": len(queries), "queries": queries})
+
+            qualifying: list = []
+            for q_idx, query in enumerate(queries):
+                if len(qualifying) >= target_count:
+                    break
+                log.info("Guided query %d/%d: %s", q_idx + 1, len(queries), query)
+                signals = await loop.run_in_executor(None, scout.query_signals_raw, query, prompt)
+
+                for signal in signals:
+                    if len(qualifying) >= target_count:
+                        break
+                    title = signal.get("title", "").strip()
+                    if not title or _is_dup(title):
+                        continue
+                    seen_titles.append(title)
+                    try:
+                        report = await loop.run_in_executor(None, self._analyst.analyze, signal)
+                        opp = await loop.run_in_executor(None, self._rater.rate, report)
+                        if opp and opp.composite_score >= target_score and not _is_pure_b2g(opp):
+                            opp.cycle_id = self._current_cycle_id
+                            saved = add_opportunity(opp)
+                            qualifying.append(saved)
+                            await self._broadcast("opportunity_added", {
+                                "id": opp.id, "title": opp.title,
+                                "score": opp.composite_score,
+                                "type": opp.classification.type,
+                                "go_to_market": opp.classification.go_to_market,
+                            })
+                            log.info("Guided: ✓ #%d [%.1f] %s", len(qualifying), opp.composite_score, opp.title[:60])
+                        elif opp:
+                            log.info("Guided: ✗ [%.1f] %s", opp.composite_score, title[:50])
+                    except Exception as e:
+                        log.error("Guided: error on '%s': %s", title[:50], e)
+
+            summary = self._generate_summary(qualifying)
+            update_db_settings({"cycle_running": False, "last_cycle_summary": summary})
+            await self._broadcast("cycle_done", {"new_opportunities": len(qualifying), "summary": summary})
+            log.info("=== Guided cycle complete: %d opportunities ===", len(qualifying))
+        except Exception as e:
+            log.error("Guided cycle error: %s", e, exc_info=True)
+            update_db_settings({"cycle_running": False})
+            await self._broadcast("cycle_error", {"error": str(e)})
+        finally:
+            self._cycle_running = False
+
     # --- Targeted domain cycle ---
 
     def targeted_cycle(self, domains: list[str], target_per_domain: int = 5, target_score: float = 75.0):

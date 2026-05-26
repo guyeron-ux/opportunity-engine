@@ -35,46 +35,18 @@ class AnalystAgent(BaseAgent):
         segment = signal.get("affected_segment", signal.get("market", ""))
         self._log.info("Analyst: analyzing '%s'", title)
 
-        # Step 1: Validate pain point
-        validation_results = self.web_search(
-            f"{title} pain point problem {segment} 2025", max_results=5
+        # 4 consolidated searches (down from 10) to cover all research dimensions
+        pain_and_market = self.web_search(
+            f"{title} {segment} problem market size", max_results=5
         )
-        corroboration = self.web_search(
-            f'"{pain_point[:60]}" problem complaints users 2025', max_results=3
+        competitors = self.web_search(
+            f"{title} competitors software vendors startups funding", max_results=5
         )
-
-        # Step 2: Competitive landscape — domain-specific, funded startups, gaps
-        competitor_results = self.web_search(
-            f"{title} competitors alternatives solutions market 2025", max_results=5
-        )
-        domain_incumbents = self.web_search(
-            f"{segment} software vendors platforms market leaders enterprise 2025", max_results=5
-        )
-        funded_startups = self.web_search(
-            f"{segment} startup funding raised series venture capital 2023 2024 2025", max_results=5
-        )
-        competitor_gaps = self.web_search(
-            f"{title} why existing solutions fail limitations gaps 2025", max_results=3
-        )
-
-        # Step 2b: Incumbent AI features — what are the big platforms already shipping?
         incumbent_ai = self.web_search(
-            f"{segment} AI feature launch Salesforce Microsoft SAP Workday Oracle Adobe 2024 2025", max_results=5
+            f"{segment} AI software Salesforce Microsoft SAP Workday Oracle", max_results=4
         )
-
-        # Step 2c: Build-vs-buy — can enterprises DIY this with LLM APIs?
         build_vs_buy = self.web_search(
-            f"build {title} internal tool LLM API enterprise DIY alternative {segment} 2024 2025", max_results=4
-        )
-
-        # Step 3: Market size
-        market_results = self.web_search(
-            f"{title} market size TAM revenue growth rate 2025", max_results=4
-        )
-
-        # Step 4: Monetization
-        monetization_results = self.web_search(
-            f"{title} business model pricing SaaS subscription revenue 2025", max_results=3
+            f"{title} build internal alternative enterprise {segment}", max_results=3
         )
 
         def fmt(results: list[dict]) -> str:
@@ -83,7 +55,7 @@ class AnalystAgent(BaseAgent):
                 for r in results
             )
 
-        synthesis_prompt = f"""You have completed multi-step research on this startup opportunity.
+        synthesis_prompt = f"""You have completed research on this startup opportunity.
 
 **Opportunity Signal:**
 Title: {title}
@@ -92,23 +64,17 @@ Affected Segment: {segment}
 
 **Research Gathered:**
 
-PAIN POINT VALIDATION:
-{fmt(validation_results + corroboration)}
+PAIN POINT & MARKET:
+{fmt(pain_and_market)}
 
-COMPETITIVE LANDSCAPE (domain-specific incumbents + funded startups):
-{fmt(competitor_results + domain_incumbents + funded_startups + competitor_gaps)}
+COMPETITIVE LANDSCAPE:
+{fmt(competitors)}
 
-INCUMBENT AI FEATURES (what big platforms are already shipping in this space):
+INCUMBENT AI FEATURES:
 {fmt(incumbent_ai)}
 
-BUILD-VS-BUY THREAT (can enterprises DIY this with LLM APIs + internal engineering?):
+BUILD-VS-BUY THREAT:
 {fmt(build_vs_buy)}
-
-MARKET DATA:
-{fmt(market_results)}
-
-MONETIZATION:
-{fmt(monetization_results)}
 
 Synthesize this into a structured analysis. Return a JSON object:
 {{

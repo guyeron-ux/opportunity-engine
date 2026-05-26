@@ -24,18 +24,18 @@ Signal strength (1-5): only return >= 3.
 """
 
 SEARCH_QUERIES = [
-    # Practitioners describing painful manual workflows with no software solution
-    "operations supply chain manufacturing professionals manually tracking spreadsheets no software solution",
-    # Niche professional communities expressing unmet software needs
-    "healthcare legal compliance operations workers frustrated no tool exists manual workaround",
-    # Indie hackers and bootstrappers discovering underserved niches with validated demand
-    "indie hacker niche market underserved no competition customers waiting validated pain",
-    # Practitioners on forums asking if software exists for their operational problem
-    "forum practitioners asking is there software tool for specific operational problem no solution",
-    # Field workers and operators describing workflow gaps in detail
-    "field technician compliance officer supply chain manager manual process workaround no software",
-    # Job postings that reveal automation gaps — roles that should be automated but aren't
-    "job posting describes manual role that should be automated no existing software tool",
+    # Specific operational roles describing manual workarounds
+    "compliance officer manual workflow spreadsheet workaround no software",
+    # Field service and operations pain by role
+    "field service technician operations manager paperwork manual process inefficiency",
+    # Niche verticals practitioners flag as underserved
+    "niche industry underserved software gap operators frustrated workaround",
+    # Job description language that signals an automation gap
+    "job description manually reconcile track coordinate across systems no automation",
+    # Forums where operators discuss the absence of tools
+    "is there software for operator specific workflow no solution exists",
+    # Practitioners discovering the gap and trying to build around it
+    "built internal spreadsheet tool because no software exists industry workflow",
 ]
 
 
