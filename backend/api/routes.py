@@ -320,8 +320,9 @@ def cycle_status():
 
 @router.post("/cycle/abort")
 def abort_cycle():
-    """Force-reset a stuck cycle. Clears both in-memory and DB flags."""
+    """Signal the running cycle to stop after current query, then reset flags."""
     orch = get_orchestrator()
+    orch.abort_cycle()
     orch._cycle_running = False
     update_db_settings({"cycle_running": False})
     return {"ok": True}

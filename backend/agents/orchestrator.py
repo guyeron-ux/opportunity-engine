@@ -22,9 +22,18 @@ class Orchestrator:
     def __init__(self, ws_manager=None):
         self.ws_manager = ws_manager  # WebSocket broadcast callable
         self._cycle_running = False
+        self._cycle_abort = False
         self._analyst = AnalystAgent()
         self._rater = RatingAgent()
         self._chat = ChatAgent()
+
+    def abort_cycle(self):
+        """Signal the running cycle to stop after its current query."""
+        if self._cycle_running:
+            self._cycle_abort = True
+            log.info("Cycle abort requested.")
+            return True
+        return False
 
     async def _broadcast(self, event: str, data: dict):
         if self.ws_manager:
@@ -37,7 +46,7 @@ class Orchestrator:
         if self._cycle_running:
             log.warning("Cycle already running, skipping.")
             return
-        self._cycle_running = True
+        self._cycle_running = True\n        self._cycle_abort = False
         self._current_cycle_id = datetime.utcnow().strftime("%Y%m%d-%H%M")
         update_db_settings({"cycle_running": True, "last_cycle_run": datetime.utcnow().isoformat()})
 
@@ -180,7 +189,7 @@ class Orchestrator:
     def rerate_all(self):
         if self._cycle_running:
             return False
-        self._cycle_running = True
+        self._cycle_running = True\n        self._cycle_abort = False
         update_db_settings({"cycle_running": True})
         asyncio.run(self._async_rerate())
         return True
@@ -297,7 +306,7 @@ class Orchestrator:
     def rerate_above_threshold(self, threshold: float):
         if self._cycle_running:
             return False
-        self._cycle_running = True
+        self._cycle_running = True\n        self._cycle_abort = False
         update_db_settings({"cycle_running": True})
         asyncio.run(self._async_rerate_above_threshold(threshold))
         return True
@@ -629,7 +638,7 @@ class Orchestrator:
     def guided_cycle(self, prompt: str, target_count: int = 5, target_score: float = 75.0):
         if self._cycle_running:
             return False
-        self._cycle_running = True
+        self._cycle_running = True\n        self._cycle_abort = False
         self._current_cycle_id = datetime.utcnow().strftime("%Y%m%d-%H%M")
         update_db_settings({"cycle_running": True, "last_cycle_run": datetime.utcnow().isoformat()})
         asyncio.run(self._async_guided_cycle(prompt, target_count, target_score))
@@ -663,13 +672,13 @@ class Orchestrator:
 
             qualifying: list = []
             for q_idx, query in enumerate(queries):
-                if len(qualifying) >= target_count:
+                if len(qualifying) >= target_count or self._cycle_abort:
                     break
                 log.info("Guided query %d/%d: %s", q_idx + 1, len(queries), query)
                 signals = await loop.run_in_executor(None, scout.query_signals_raw, query, prompt)
 
                 for signal in signals:
-                    if len(qualifying) >= target_count:
+                    if len(qualifying) >= target_count or self._cycle_abort:
                         break
                     title = signal.get("title", "").strip()
                     if not title or _is_dup(title):
@@ -711,7 +720,7 @@ class Orchestrator:
         """Run a targeted discovery cycle for specific domains until target_per_domain qualifying opps found."""
         if self._cycle_running:
             return False
-        self._cycle_running = True
+        self._cycle_running = True\n        self._cycle_abort = False
         self._current_cycle_id = datetime.utcnow().strftime("%Y%m%d-%H%M")
         update_db_settings({"cycle_running": True, "last_cycle_run": datetime.utcnow().isoformat()})
         asyncio.run(self._async_targeted_cycle(domains, target_per_domain, target_score))
@@ -753,6 +762,9 @@ class Orchestrator:
                     if len(qualifying) >= target_per_domain:
                         log.info("Targeted[%s]: target reached after %d queries", domain, q_idx)
                         break
+                    if self._cycle_abort:
+                        log.info("Targeted[%s]: abort requested, stopping", domain)
+                        break
 
                     log.info("Targeted[%s] query %d/%d: %s", domain, q_idx + 1, len(queries), query[:60])
                     # Scout one query (web search + LLM extraction)
@@ -761,7 +773,7 @@ class Orchestrator:
 
                     # Immediately process each signal — stop as soon as we have enough
                     for signal in signals:
-                        if len(qualifying) >= target_per_domain:
+                        if len(qualifying) >= target_per_domain or self._cycle_abort:
                             break
 
                         title = signal.get("title", "").strip()
@@ -826,7 +838,7 @@ class Orchestrator:
     def process_upload(self, text: str, filename: str):
         if self._cycle_running:
             return False
-        self._cycle_running = True
+        self._cycle_running = True\n        self._cycle_abort = False
         self._current_cycle_id = datetime.utcnow().strftime("%Y%m%d-%H%M")
         update_db_settings({"cycle_running": True})
         asyncio.run(self._async_process_upload(text, filename))
