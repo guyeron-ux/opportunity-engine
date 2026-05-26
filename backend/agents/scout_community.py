@@ -24,18 +24,18 @@ Signal strength (1-5): only return >= 3.
 """
 
 SEARCH_QUERIES = [
-    # Specific operational roles describing manual workarounds
-    "compliance officer manual workflow spreadsheet workaround no software",
-    # Field service and operations pain by role
-    "field service technician operations manager paperwork manual process inefficiency",
-    # Niche verticals practitioners flag as underserved
-    "niche industry underserved software gap operators frustrated workaround",
-    # Job description language that signals an automation gap
-    "job description manually reconcile track coordinate across systems no automation",
-    # Forums where operators discuss the absence of tools
-    "is there software for operator specific workflow no solution exists",
-    # Practitioners discovering the gap and trying to build around it
-    "built internal spreadsheet tool because no software exists industry workflow",
+    # Role-specific pain: people doing the work describe friction
+    "operations manager challenge bottleneck time wasted manual",
+    # Healthcare/legal/compliance practitioners describing broken workflows
+    "clinician compliance officer attorney inefficiency workaround frustration",
+    # Supply chain and logistics workers describing failure modes
+    "supply chain logistics disruption manual error coordination failure",
+    # Field workers describing what breaks in practice
+    "field technician inspector maintenance worker problem friction",
+    # Niche operator communities surfacing gaps
+    "small business owner operator niche industry problem challenge unmet need",
+    # Job postings as proxy for unautomated work
+    "job role coordinate manually track reconcile across multiple systems",
 ]
 
 

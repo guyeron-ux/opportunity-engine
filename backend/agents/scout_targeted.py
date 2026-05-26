@@ -16,13 +16,13 @@ new regulatory frameworks, data layers for grid operators and energy traders.
 Signal strength (1-5): only return >= 3. Be demanding — a 5 requires quantified pain, real buyers, defensible wedge.""",
 
         "queries": [
-            "renewable energy interconnection queue risk software developers",
-            "industrial heat decarbonization cement steel hard-to-abate software",
-            "battery storage BESS asset management degradation warranty",
-            "offshore wind operations maintenance logistics software gap",
-            "virtual power plant capacity market bidding optimization",
-            "carbon border adjustment CBAM compliance software exporters",
-            "coal plant decommissioning brownfield repurpose grid connection",
+            "renewable energy developer bottleneck failure interconnection delay cost",
+            "industrial heat hard-to-abate cement steel decarbonization challenge",
+            "battery storage project failure underperformance degradation operator",
+            "offshore wind cost overrun operations challenge bottleneck",
+            "virtual power plant aggregator challenge revenue loss grid participation",
+            "carbon border adjustment CBAM exporter unprepared compliance burden",
+            "coal plant closure grid stranded asset challenge opportunity",
         ],
     },
 
@@ -36,13 +36,13 @@ contract manufacturer visibility gaps, hidden quality control costs.
 Signal strength (1-5): only return >= 3. Be demanding — a 5 requires quantified pain, specific buyers, defensible wedge.""",
 
         "queries": [
-            "tier 2 tier 3 supplier financial risk monitoring OEM manufacturing",
-            "MRO maintenance repair operations procurement inefficiency manufacturer",
-            "reshoring supplier qualification discovery platform manufacturer",
-            "legacy factory equipment data capture quality control retrofit",
-            "PFAS supply chain compliance chemical substitution manufacturer",
-            "contract manufacturer capacity visibility demand planning software",
-            "pharmaceutical active ingredient supply chain single source risk",
+            "OEM supplier failure disruption production line cost impact",
+            "unplanned downtime maintenance failure manufacturer cost operations",
+            "reshoring manufacturer challenge supplier qualification bottleneck",
+            "factory floor data quality scrap rework hidden cost operations",
+            "PFAS chemical supply chain manufacturer liability regulation impact",
+            "contract manufacturer customer demand mismatch capacity problem",
+            "pharmaceutical ingredient supply chain disruption shortage risk",
         ],
     },
 }

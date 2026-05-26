@@ -17,18 +17,18 @@ Signal strength (1-5): only return >= 3.
 """
 
 SEARCH_QUERIES = [
-    # VC theses in niche verticals
-    "venture capital niche vertical emerging category thesis underserved market",
-    # Cross-sector technology transfer
-    "technology proven sector applied different industry startup opportunity",
-    # Regulatory changes opening new market windows
-    "new regulation policy enforcement creates software compliance requirement industry",
-    # Large industries with primitive software stacks
-    "industry billion dollar market manual process low technology adoption",
-    # Research crossing into commercial application
-    "research technology near commercial viability startup application",
-    # Infrastructure shifts enabling new business models
-    "cost decline commoditization enables new business model startup category",
+    # VC theses naming categories before they're obvious
+    "venture capital emerging category underserved market thesis niche",
+    # Regulatory changes forcing new behavior with no incumbent solution
+    "regulation enforcement change industry unprepared compliance gap",
+    # Economically large sectors with primitive tooling
+    "large industry fragmented manual low technology billion dollar market",
+    # Academic or R&D outputs approaching commercial readiness
+    "research breakthrough near commercial application industry problem",
+    # Infrastructure cost collapses that shift market economics
+    "cost decline infrastructure access opens new market previously unviable",
+    # Demographic or macro shifts creating new buyers or destroying old ones
+    "demographic shift workforce change buyer behavior new market need",
 ]
 
 

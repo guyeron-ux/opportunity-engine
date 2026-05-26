@@ -26,20 +26,20 @@ If the answer is no, it's a 2.
 """
 
 SEARCH_QUERIES = [
-    # Regulatory/compliance shifts forcing new software categories
-    "new regulation compliance requirement enterprise software gap",
-    # Industries economically large but digitally primitive
-    "industry still uses spreadsheets fax paper manual process costly",
-    # Cross-sector technology transfer
-    "technology methodology proven finance defense aerospace applied new industry sector",
-    # Post-acquisition gaps — underserved buyers after vendor consolidation
-    "enterprise software vendor acquisition customers abandoned gap underserved",
-    # Infrastructure commoditization enabling new application layers
-    "infrastructure API now commodity enables new startup application category",
-    # Skilled labor shortage forcing software to absorb expertise
-    "skilled labor shortage expert knowledge workforce crisis software solution",
-    # Operational data trapped with no action loop
-    "operational data collected unused siloed no software acts on it industry",
+    # Regulatory pain: new enforcement with no existing compliance path
+    "new regulation enforcement penalty industry unprepared burden",
+    # Manual-process industries: symptoms of primitive digitization
+    "industry manual process bottleneck costly error workaround",
+    # Vendor abandonment: PE consolidation leaves buyers stranded
+    "enterprise vendor acquisition sunset discontinued customers stranded",
+    # Cost shifts: something got cheap, changing who can compete
+    "cost decline price drop changes industry economics competitors",
+    # Expert scarcity: labor shortage forces knowledge into software
+    "expert shortage workforce retirement knowledge loss industry risk",
+    # Dead data: valuable signals collected but never acted on
+    "data generated ignored unused operational gap decision",
+    # Cross-sector transfer: proven approach not yet applied elsewhere
+    "approach proven industry bottleneck adjacent sector not yet adopted",
 ]
 
 
