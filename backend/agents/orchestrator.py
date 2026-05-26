@@ -46,7 +46,8 @@ class Orchestrator:
         if self._cycle_running:
             log.warning("Cycle already running, skipping.")
             return
-        self._cycle_running = True\n        self._cycle_abort = False
+        self._cycle_running = True
+        self._cycle_abort = False
         self._current_cycle_id = datetime.utcnow().strftime("%Y%m%d-%H%M")
         update_db_settings({"cycle_running": True, "last_cycle_run": datetime.utcnow().isoformat()})
 
@@ -189,7 +190,8 @@ class Orchestrator:
     def rerate_all(self):
         if self._cycle_running:
             return False
-        self._cycle_running = True\n        self._cycle_abort = False
+        self._cycle_running = True
+        self._cycle_abort = False
         update_db_settings({"cycle_running": True})
         asyncio.run(self._async_rerate())
         return True
@@ -306,7 +308,8 @@ class Orchestrator:
     def rerate_above_threshold(self, threshold: float):
         if self._cycle_running:
             return False
-        self._cycle_running = True\n        self._cycle_abort = False
+        self._cycle_running = True
+        self._cycle_abort = False
         update_db_settings({"cycle_running": True})
         asyncio.run(self._async_rerate_above_threshold(threshold))
         return True
@@ -638,7 +641,8 @@ class Orchestrator:
     def guided_cycle(self, prompt: str, target_count: int = 5, target_score: float = 75.0):
         if self._cycle_running:
             return False
-        self._cycle_running = True\n        self._cycle_abort = False
+        self._cycle_running = True
+        self._cycle_abort = False
         self._current_cycle_id = datetime.utcnow().strftime("%Y%m%d-%H%M")
         update_db_settings({"cycle_running": True, "last_cycle_run": datetime.utcnow().isoformat()})
         asyncio.run(self._async_guided_cycle(prompt, target_count, target_score))
@@ -720,7 +724,8 @@ class Orchestrator:
         """Run a targeted discovery cycle for specific domains until target_per_domain qualifying opps found."""
         if self._cycle_running:
             return False
-        self._cycle_running = True\n        self._cycle_abort = False
+        self._cycle_running = True
+        self._cycle_abort = False
         self._current_cycle_id = datetime.utcnow().strftime("%Y%m%d-%H%M")
         update_db_settings({"cycle_running": True, "last_cycle_run": datetime.utcnow().isoformat()})
         asyncio.run(self._async_targeted_cycle(domains, target_per_domain, target_score))
@@ -838,7 +843,8 @@ class Orchestrator:
     def process_upload(self, text: str, filename: str):
         if self._cycle_running:
             return False
-        self._cycle_running = True\n        self._cycle_abort = False
+        self._cycle_running = True
+        self._cycle_abort = False
         self._current_cycle_id = datetime.utcnow().strftime("%Y%m%d-%H%M")
         update_db_settings({"cycle_running": True})
         asyncio.run(self._async_process_upload(text, filename))
