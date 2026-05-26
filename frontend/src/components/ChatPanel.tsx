@@ -8,7 +8,7 @@ interface Props {
 }
 
 interface Action {
-  type: 'rerate' | 'edit'
+  type: 'rerate' | 'edit' | 'reframe'
   data?: Record<string, unknown>
 }
 
@@ -39,6 +39,8 @@ export function ChatPanel({ opp, onOppUpdated }: Props) {
   const [reratingId, setReratingId] = useState<string | null>(null)
   const [reratingPending, setReratingPending] = useState(false)
   const [confirmRerateIdx, setConfirmRerateIdx] = useState<number | null>(null)
+  const [reframePending, setReframePending] = useState(false)
+  const [confirmReframe, setConfirmReframe] = useState(false)
   const [applyingEdit, setApplyingEdit] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const accRef = useRef('')
@@ -51,13 +53,14 @@ export function ChatPanel({ opp, onOppUpdated }: Props) {
     )
   }, [opp.id, opp.user.chat?.length])
 
-  // Clear reratingPending once the opportunity is refreshed with new data
+  // Clear pending states once the opportunity is refreshed with new data
   useEffect(() => {
-    if (reratingPending && opp.updated_at !== lastUpdatedAtRef.current) {
+    if ((reratingPending || reframePending) && opp.updated_at !== lastUpdatedAtRef.current) {
       setReratingPending(false)
+      setReframePending(false)
     }
     lastUpdatedAtRef.current = opp.updated_at
-  }, [opp.updated_at, reratingPending])
+  }, [opp.updated_at, reratingPending, reframePending])
 
   useEffect(() => {
     if (open) bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -131,6 +134,16 @@ export function ChatPanel({ opp, onOppUpdated }: Props) {
     }
   }
 
+  async function handleReframe() {
+    setConfirmReframe(false)
+    setReframePending(true)
+    try {
+      await api.reframe(opp.id)
+    } catch {
+      setReframePending(false)
+    }
+  }
+
   async function handleClearChat() {
     await api.clearChat(opp.id)
     setMessages([])
@@ -157,7 +170,7 @@ export function ChatPanel({ opp, onOppUpdated }: Props) {
           <div className="flex items-center gap-3">
             <button
               onClick={manualRerate}
-              disabled={reratingPending || streaming}
+              disabled={reratingPending || reframePending || streaming}
               className={`text-xs transition-colors disabled:opacity-50 ${
                 reratingPending
                   ? 'text-violet-400 animate-pulse cursor-default'
@@ -165,7 +178,19 @@ export function ChatPanel({ opp, onOppUpdated }: Props) {
               }`}
               title="Rescore this opportunity using the full conversation as context"
             >
-              {reratingPending ? '↻ Rescoring…' : '↻ Rerate with chat'}
+              {reratingPending ? '↻ Rescoring…' : '↻ Rerate'}
+            </button>
+            <button
+              onClick={() => setConfirmReframe(true)}
+              disabled={reratingPending || reframePending || streaming}
+              className={`text-xs transition-colors disabled:opacity-50 ${
+                reframePending
+                  ? 'text-amber-400 animate-pulse cursor-default'
+                  : 'text-amber-500 hover:text-amber-300'
+              }`}
+              title="Rewrite the full analysis — title, rationales, risk assessment — based on conversation insights"
+            >
+              {reframePending ? '⟳ Reframing…' : '⟳ Reframe'}
             </button>
             <button
               onClick={handleClearChat}
@@ -222,6 +247,15 @@ export function ChatPanel({ opp, onOppUpdated }: Props) {
                               ↻ Rerate with these insights
                             </button>
                           )
+                        ) : action.type === 'reframe' ? (
+                          <button
+                            key={ai}
+                            onClick={() => setConfirmReframe(true)}
+                            disabled={reframePending || reratingId !== null}
+                            className="text-xs bg-gray-700 hover:bg-amber-800 text-gray-300 hover:text-white px-2.5 py-1 rounded-lg transition-colors disabled:opacity-50"
+                          >
+                            ⟳ Reframe full analysis
+                          </button>
                         ) : action.type === 'edit' && action.data ? (
                           <button
                             key={ai}
@@ -275,11 +309,38 @@ export function ChatPanel({ opp, onOppUpdated }: Props) {
             <div ref={bottomRef} />
           </div>
 
-          {/* Rerate-pending indicator */}
+          {/* Reframe confirmation dialog */}
+          {confirmReframe && (
+            <div className="bg-gray-900 border border-amber-700/50 rounded-lg px-3 py-2 text-xs text-gray-300 flex flex-col gap-1.5">
+              <p>This rewrites the full analysis — title, pain point, rating rationales, risk assessment — using insights from this conversation. Scores will be recalculated.</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleReframe}
+                  className="bg-amber-700 hover:bg-amber-600 text-white px-2.5 py-1 rounded-md transition-colors"
+                >
+                  Confirm reframe
+                </button>
+                <button
+                  onClick={() => setConfirmReframe(false)}
+                  className="text-gray-500 hover:text-gray-300 px-2.5 py-1 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Pending indicators */}
           {reratingPending && (
             <div className="flex items-center gap-2 text-xs text-violet-400 animate-pulse px-1 py-1">
               <span className="inline-block animate-spin">↻</span>
               Rescoring with conversation insights — scores will update when complete…
+            </div>
+          )}
+          {reframePending && (
+            <div className="flex items-center gap-2 text-xs text-amber-400 animate-pulse px-1 py-1">
+              <span className="inline-block animate-spin">⟳</span>
+              Rewriting full analysis from conversation insights — panel will refresh when complete…
             </div>
           )}
 

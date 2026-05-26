@@ -120,6 +120,16 @@ export const api = {
   updateSettings: (patch: Record<string, unknown>) =>
     req('/settings', { method: 'PATCH', body: JSON.stringify(patch) }),
   triggerCycle: () => req<{ ok: boolean; message: string }>('/cycle/run', { method: 'POST' }),
+  triggerTargetedCycle: (domains: string[], targetPerDomain = 5, targetScore = 75) =>
+    req<{ ok: boolean; message: string }>('/cycle/targeted', {
+      method: 'POST',
+      body: JSON.stringify({ domains, target_per_domain: targetPerDomain, target_score: targetScore }),
+    }),
+  triggerGuidedCycle: (prompt: string, targetCount = 5, targetScore = 75) =>
+    req<{ ok: boolean; message: string }>('/cycle/guided', {
+      method: 'POST',
+      body: JSON.stringify({ prompt, target_count: targetCount, target_score: targetScore }),
+    }),
   getCycleStatus: () => req<CycleStatus>('/cycle/status'),
   getImports: () => req<Array<{ id: string; filename: string; imported_at: string; signals_extracted: number; opportunities_added: number }>>('/imports'),
   rerateAll: () => req<{ ok: boolean; message: string }>('/opportunities/rerate', { method: 'POST' }),
@@ -171,6 +181,8 @@ export const api = {
     }),
   clearChat: (id: string) =>
     req<{ ok: boolean }>(`/opportunities/${id}/chat`, { method: 'DELETE' }),
+  reframe: (id: string) =>
+    req<{ ok: boolean }>(`/opportunities/${id}/reframe`, { method: 'POST' }),
   deepResearch: (id: string, task: string) =>
     req<{ ok: boolean }>(`/opportunities/${id}/deep-research`, {
       method: 'POST',

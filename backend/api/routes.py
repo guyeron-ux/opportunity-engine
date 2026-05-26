@@ -240,6 +240,19 @@ def deep_research_opportunity(opp_id: str, body: DeepResearchRequest):
     return {"ok": True}
 
 
+@router.post("/opportunities/{opp_id}/reframe")
+def reframe_opportunity(opp_id: str):
+    opp = get_opportunity_by_id(opp_id)
+    if not opp:
+        raise HTTPException(404, f"Opportunity {opp_id} not found")
+    if not opp.user.chat:
+        raise HTTPException(400, "No chat history to reframe from")
+    orch = get_orchestrator()
+    thread = threading.Thread(target=orch.reframe_one, args=(opp_id,), daemon=True)
+    thread.start()
+    return {"ok": True}
+
+
 @router.get("/settings")
 def get_settings():
     return get_db_settings()

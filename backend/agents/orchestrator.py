@@ -9,6 +9,7 @@ from backend.agents.scout_community import ScoutCommunityAgent
 from backend.agents.scout_longform import ScoutLongformAgent
 from backend.agents.analyst import AnalystAgent
 from backend.agents.rating import RatingAgent
+from backend.agents.chat import ChatAgent
 from backend.models.database import (
     add_opportunity, get_opportunities, archive_opportunity,
     update_opportunity, get_db_settings, update_db_settings, _is_pure_b2g,
@@ -23,6 +24,7 @@ class Orchestrator:
         self._cycle_running = False
         self._analyst = AnalystAgent()
         self._rater = RatingAgent()
+        self._chat = ChatAgent()
 
     async def _broadcast(self, event: str, data: dict):
         if self.ws_manager:
@@ -445,6 +447,108 @@ class Orchestrator:
                 )
         except Exception as e:
             log.error("rerate_one_with_context error for %s: %s", opp_id, e, exc_info=True)
+
+    # --- Reframe a single opportunity using chat insights ---
+
+    def reframe_one(self, opp_id: str):
+        asyncio.run(self._async_reframe_one(opp_id))
+
+    async def _async_reframe_one(self, opp_id: str):
+        from backend.models.database import load_db, save_db
+        from backend.models.opportunity import (
+            Ratings, RatingFactor, Classification, DevilsAdvocate
+        )
+        try:
+            db = load_db()
+            opp = next((o for o in db.opportunities if o.id == opp_id), None)
+            if not opp:
+                log.warning("reframe_one: opportunity %s not found", opp_id)
+                return
+
+            log.info("reframe_one: starting for '%s'", opp.title)
+            loop = asyncio.get_event_loop()
+            data = await loop.run_in_executor(None, self._chat.reframe, opp)
+            if not data:
+                log.warning("reframe_one: no output for '%s'", opp.title)
+                return
+
+            # Update title
+            if data.get("title"):
+                opp.title = data["title"]
+
+            # Update research fields
+            for field in ("pain_point_summary", "affected_segments", "solution_hypothesis",
+                          "market_size_estimate", "solution_tam_estimate", "tam_derivation",
+                          "market_growth_rate", "monetization_models",
+                          "incumbent_ai_threat", "build_vs_buy_risk"):
+                val = data.get(field)
+                if val is not None:
+                    setattr(opp.research, field, val)
+
+            # Update ratings
+            raw_ratings = data.get("ratings", {})
+            factor_names = ["market_size", "pain_severity", "solution_clarity",
+                            "competitive_insight", "monetization_potential",
+                            "startup_viability", "signal_authority"]
+            for name in factor_names:
+                rf_data = raw_ratings.get(name)
+                if not rf_data:
+                    continue
+                existing: RatingFactor = getattr(opp.ratings, name)
+                existing.score = rf_data.get("score", existing.score)
+                existing.rationale = rf_data.get("rationale", existing.rationale)
+                existing.evidence = rf_data.get("evidence", existing.evidence)
+                if name == "startup_viability":
+                    if rf_data.get("capital_efficiency") is not None:
+                        existing.capital_efficiency = rf_data["capital_efficiency"]
+                    if rf_data.get("time_to_revenue") is not None:
+                        existing.time_to_revenue = rf_data["time_to_revenue"]
+                    if rf_data.get("execution_accessibility") is not None:
+                        existing.execution_accessibility = rf_data["execution_accessibility"]
+
+            # Recalculate composite from ratings (authoritative weights)
+            opp.composite_score = opp.ratings.composite()
+
+            # Update classification
+            cls = data.get("classification", {})
+            if cls:
+                for field in ("type", "moonshot_justification", "category", "industry",
+                              "go_to_market", "tech_stack", "tags"):
+                    val = cls.get(field)
+                    if val is not None:
+                        setattr(opp.classification, field, val)
+
+            # Update devil's advocate
+            da = data.get("devils_advocate", {})
+            if da:
+                if not opp.devils_advocate:
+                    opp.devils_advocate = DevilsAdvocate(
+                        bear_case="", key_risks=[], biggest_threat=""
+                    )
+                for field in ("bear_case", "key_risks", "biggest_threat"):
+                    val = da.get(field)
+                    if val is not None:
+                        setattr(opp.devils_advocate, field, val)
+
+            opp.updated_at = datetime.utcnow()
+            if _is_pure_b2g(opp):
+                log.info("reframe_one: archiving pure B2G '%s'", opp.title)
+                opp.user.archived = True
+                opp.user.archived_at = datetime.utcnow()
+                db.archived_opportunities.append(opp)
+                db.opportunities.remove(opp)
+
+            db.opportunities.sort(key=lambda o: o.composite_score, reverse=True)
+            save_db(db)
+            await self._broadcast("opportunity_updated", {
+                "id": opp_id,
+                "score": opp.composite_score,
+                "type": opp.classification.type,
+                "go_to_market": opp.classification.go_to_market,
+            })
+            log.info("reframe_one: completed for '%s' → %.1f", opp.title, opp.composite_score)
+        except Exception as e:
+            log.error("reframe_one error for %s: %s", opp_id, e, exc_info=True)
 
     # --- Deep research on a single opportunity ---
 

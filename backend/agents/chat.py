@@ -32,6 +32,10 @@ At the END of your reply only, append action tags when relevant:
   deeper scrutiny tends to surface overlooked risks and pull scores down, but a rerate
   that uncovers a missed strength or an under-appreciated market should move the score up.
 - Append `[SUGGEST_EDIT:{{"field": "value"}}]` to suggest a specific field change (e.g., title, notes).
+- Append `[SUGGEST_REFRAME]` when the conversation has surfaced enough new insight to warrant rewriting the \
+full opportunity — updated rationales, revised narrative, new risk framing. This goes further than a rerate: \
+it rewrites the analysis text, not just the scores. Use it when you and the user have materially reframed \
+the opportunity, not for minor score adjustments.
 
 Be extremely concise. Default to 2-4 sentences. Bullets only for 3+ items.
 No preamble, no restatement, no sign-off. Lead with the substance.
@@ -102,4 +106,86 @@ NOTES: {opp.user.notes or 'None'}"""
                 pass
         text = edit_pattern.sub("", text).strip()
 
+        # Extract [SUGGEST_REFRAME]
+        if "[SUGGEST_REFRAME]" in text:
+            actions.append({"type": "reframe"})
+            text = text.replace("[SUGGEST_REFRAME]", "").strip()
+
         return text, actions
+
+    def reframe(self, opp) -> dict | None:
+        """Synthesise chat insights into a full rewrite of the opportunity."""
+        chat_lines = []
+        for msg in (opp.user.chat or []):
+            role = "User" if msg.role == "user" else "Analyst"
+            chat_lines.append(f"{role}: {msg.content}")
+
+        if not chat_lines:
+            return None
+
+        context = self._build_context(opp)
+        chat_text = "\n\n".join(chat_lines)
+
+        prompt = f"""CURRENT OPPORTUNITY:
+{context}
+
+ANALYST CONVERSATION:
+{chat_text}
+
+Rewrite the opportunity analysis to incorporate insights from this conversation.
+Only change what the conversation improved or corrected. Keep what's still accurate.
+
+Return ONLY this JSON, no markdown, no explanation:
+{{
+  "title": "...",
+  "pain_point_summary": "...",
+  "affected_segments": ["..."],
+  "solution_hypothesis": "...",
+  "market_size_estimate": "...",
+  "solution_tam_estimate": "...",
+  "tam_derivation": "...",
+  "market_growth_rate": "...",
+  "monetization_models": ["..."],
+  "incumbent_ai_threat": "...",
+  "build_vs_buy_risk": "...",
+  "ratings": {{
+    "market_size": {{"score": 0, "rationale": "...", "evidence": ["..."]}},
+    "pain_severity": {{"score": 0, "rationale": "...", "evidence": ["..."]}},
+    "solution_clarity": {{"score": 0, "rationale": "...", "evidence": ["..."]}},
+    "competitive_insight": {{"score": 0, "rationale": "...", "evidence": ["..."]}},
+    "monetization_potential": {{"score": 0, "rationale": "...", "evidence": ["..."]}},
+    "startup_viability": {{"score": 0, "rationale": "...", "evidence": ["..."], "capital_efficiency": 0, "time_to_revenue": 0, "execution_accessibility": 0}},
+    "signal_authority": {{"score": 0, "rationale": "...", "evidence": ["..."]}}
+  }},
+  "classification": {{
+    "type": "Moonshot or Pragmatic",
+    "moonshot_justification": "...",
+    "category": "...",
+    "industry": "...",
+    "go_to_market": "B2B or B2C or B2G or B2B/B2C etc",
+    "tech_stack": ["..."],
+    "tags": ["..."]
+  }},
+  "devils_advocate": {{
+    "bear_case": "...",
+    "key_risks": ["..."],
+    "biggest_threat": "..."
+  }}
+}}"""
+
+        system = ("You are a startup analyst rewriting an opportunity analysis based on a conversation. "
+                  "Synthesise what was learned. Be accurate, specific, and concise. "
+                  "Return only valid JSON.")
+
+        try:
+            result = self._call_json(
+                [{"role": "user", "content": prompt}],
+                system=system,
+                max_tokens=4000,
+                temperature=0.2,
+            )
+            if isinstance(result, dict):
+                return result
+        except Exception as e:
+            self._log.error("ChatAgent.reframe error: %s", e)
+        return None
