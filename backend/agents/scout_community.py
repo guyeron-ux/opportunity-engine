@@ -25,17 +25,17 @@ Signal strength (1-5): only return >= 3.
 
 SEARCH_QUERIES = [
     # Practitioners describing painful manual workflows with no software solution
-    "operations supply chain manufacturing professionals manually tracking spreadsheets no software solution 2025",
+    "operations supply chain manufacturing professionals manually tracking spreadsheets no software solution 2026",
     # Niche professional communities expressing unmet software needs
-    "healthcare legal compliance operations workers frustrated no tool exists manual workaround 2025",
+    "healthcare legal compliance operations workers frustrated no tool exists manual workaround 2026",
     # Indie hackers and bootstrappers discovering underserved niches with validated demand
-    "indie hacker niche market underserved no competition customers waiting validated pain 2025",
+    "indie hacker niche market underserved no competition customers waiting validated pain 2026",
     # Practitioners on forums asking if software exists for their operational problem
-    "forum practitioners asking is there software tool for specific operational problem no solution 2025",
+    "forum practitioners asking is there software tool for specific operational problem no solution 2026",
     # Field workers and operators describing workflow gaps in detail
-    "field technician compliance officer supply chain manager manual process workaround no software 2025",
+    "field technician compliance officer supply chain manager manual process workaround no software 2026",
     # Job postings that reveal automation gaps — roles that should be automated but aren't
-    "job posting describes manual role that should be automated no existing software tool 2025",
+    "job posting describes manual role that should be automated no existing software tool 2026",
 ]
 
 

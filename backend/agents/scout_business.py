@@ -27,19 +27,19 @@ If the answer is no, it's a 2.
 
 SEARCH_QUERIES = [
     # Regulatory/compliance shifts forcing new software categories
-    "new regulation compliance requirement enterprise software gap 2025 2026",
+    "new regulation compliance requirement enterprise software gap 2026",
     # Industries economically large but digitally primitive
-    "industry still uses spreadsheets fax paper manual process costly 2025",
+    "industry still uses spreadsheets fax paper manual process costly 2026",
     # Cross-sector technology transfer
-    "technology methodology proven finance defense aerospace applied new industry sector 2025",
+    "technology methodology proven finance defense aerospace applied new industry sector 2026",
     # Post-acquisition gaps — underserved buyers after vendor consolidation
-    "enterprise software vendor acquisition customers abandoned gap underserved 2025",
+    "enterprise software vendor acquisition customers abandoned gap underserved 2026",
     # Infrastructure commoditization enabling new application layers
-    "infrastructure API now commodity enables new startup application category 2025",
+    "infrastructure API now commodity enables new startup application category 2026",
     # Skilled labor shortage forcing software to absorb expertise
-    "skilled labor shortage expert knowledge workforce crisis software solution 2025",
+    "skilled labor shortage expert knowledge workforce crisis software solution 2026",
     # Operational data trapped with no action loop
-    "operational data collected unused siloed no software acts on it industry 2025",
+    "operational data collected unused siloed no software acts on it industry 2026",
 ]
 
 

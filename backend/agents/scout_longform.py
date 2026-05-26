@@ -23,17 +23,17 @@ Signal strength (1-5): only return >= 3.
 
 SEARCH_QUERIES = [
     # VC investment in unusual, niche verticals — signals validated pain
-    "venture capital investment niche vertical underrated overlooked sector 2025",
+    "venture capital investment niche vertical underrated overlooked sector 2026",
     # Cross-industry technology transfer analyses by researchers or analysts
-    "technology transfer methodology from one industry applied another sector startup 2025",
+    "technology transfer methodology from one industry applied another sector startup 2026",
     # Macro/regulatory shifts opening new market windows
-    "policy change regulation opens new market category startup opportunity 2025 2026",
+    "policy change regulation opens new market category startup opportunity 2026",
     # Sectors large in economic weight, small in software penetration
-    "large industry low software penetration digital gap opportunity 2025",
+    "large industry low software penetration digital gap opportunity 2026",
     # Emerging research nearing commercial inflection
-    "research commercialize near-term application startup technology 2024 2025",
+    "research commercialize near-term application startup technology 2026",
     # Infrastructure shifts that remove historical barriers
-    "infrastructure cost collapse enables new business model previously impossible 2025",
+    "infrastructure cost collapse enables new business model previously impossible 2026",
 ]
 
 

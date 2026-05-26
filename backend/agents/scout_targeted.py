@@ -30,19 +30,19 @@ Signal strength (1-5): only return >= 3. Be demanding — a 5 requires: quantifi
 
         "queries": [
             # Grid interconnection: 2,000+ GW stuck in queues, developers flying blind on withdrawal risk
-            "renewable energy interconnection queue position risk modeling software developer 2025",
+            "renewable energy interconnection queue position risk modeling software developer 2026",
             # Industrial heat: 20% of global energy use, almost no software addresses it
-            "industrial process heat decarbonization cement steel glass hard-to-abate software gap 2025",
+            "industrial process heat decarbonization cement steel glass hard-to-abate software gap 2026",
             # BESS lifecycle: $50B+ deployed with no purpose-built asset management stack
-            "battery energy storage system BESS degradation warranty revenue optimization software 2025",
+            "battery energy storage system BESS degradation warranty revenue optimization software 2026",
             # Offshore wind O&M: logistics nightmare, ~$25B/yr cost, no dominant software player
-            "offshore wind operations maintenance vessel scheduling technician dispatch software 2025",
+            "offshore wind operations maintenance vessel scheduling technician dispatch software 2026",
             # Capacity markets: VPPs and aggregators losing revenue to manual bidding errors
-            "virtual power plant capacity market ancillary services bidding optimization software 2025",
+            "virtual power plant capacity market ancillary services bidding optimization software 2026",
             # CBAM: EU carbon border tax forces US/Asian exporters to quantify embedded carbon
-            "carbon border adjustment mechanism CBAM embedded carbon calculation compliance software 2025",
+            "carbon border adjustment mechanism CBAM embedded carbon calculation compliance software 2026",
             # Brownfield: 250+ US coal plants closing, grid connections worth $millions, no repurposing software
-            "coal plant decommissioning brownfield repurpose grid connection valuation software 2025",
+            "coal plant decommissioning brownfield repurpose grid connection valuation software 2026",
         ],
     },
 
@@ -70,19 +70,19 @@ Signal strength (1-5): only return >= 3. Be demanding — a 5 requires: quantifi
 
         "queries": [
             # Sub-tier supplier risk: OEMs only watch tier-1; tier-2/3 failures cause the actual disruptions
-            "tier 2 tier 3 supplier financial distress early warning monitoring OEM manufacturing 2025",
+            "tier 2 tier 3 supplier financial distress early warning monitoring OEM manufacturing 2026",
             # MRO: $700B market, 60%+ unplanned spend, almost no modern procurement software
-            "MRO maintenance repair operations unplanned spend procurement optimization manufacturer 2025",
+            "MRO maintenance repair operations unplanned spend procurement optimization manufacturer 2026",
             # Reshoring gap: manufacturers moving from China can't find qualified alternative suppliers
-            "reshoring nearshoring supplier qualification discovery platform manufacturer US Mexico 2025",
+            "reshoring nearshoring supplier qualification discovery platform manufacturer US Mexico 2026",
             # Legacy machine data: 80% of factory equipment has no connectivity, operators can't see quality data
-            "legacy factory equipment brownfield data capture quality scrap retrofit manufacturer 2025",
+            "legacy factory equipment brownfield data capture quality scrap retrofit manufacturer 2026",
             # PFAS compliance: EPA PFAS rules forcing manufacturers to trace chemicals through supply chain
-            "PFAS forever chemicals supply chain compliance material substitution manufacturer 2025",
+            "PFAS forever chemicals supply chain compliance material substitution manufacturer 2026",
             # Contract mfg visibility: CMOs have no software to share capacity; customers can't plan
-            "contract manufacturer capacity planning visibility demand signal sharing software 2025",
+            "contract manufacturer capacity planning visibility demand signal sharing software 2026",
             # API pharma: 80%+ of active pharma ingredients sourced from China/India, no monitoring tool
-            "active pharmaceutical ingredient API supply chain single source risk monitoring software 2025",
+            "active pharmaceutical ingredient API supply chain single source risk monitoring software 2026",
         ],
     },
 }
