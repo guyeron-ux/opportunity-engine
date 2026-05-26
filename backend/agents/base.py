@@ -44,7 +44,7 @@ class BaseAgent:
             self._log.warning("Tavily API key not set — skipping search for: %s", query)
             return []
         try:
-            response = self._tavily.search(query=query, max_results=max_results, search_depth="advanced")
+            response = self._tavily.search(query=query, max_results=max_results, search_depth="advanced", days=270)
             results = response.get("results", [])
             self._log.debug("Search '%s' → %d results", query, len(results))
             return results
