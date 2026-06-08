@@ -200,7 +200,7 @@ class Orchestrator:
         from backend.models.database import load_db, save_db
         try:
             db = load_db()
-            opps = db.opportunities[:]
+            opps = [o for o in db.opportunities if o.composite_score >= 75]
             await self._broadcast("team_fit_start", {"total": len(opps)})
             log.info("Team fit scoring %d opportunities", len(opps))
 
