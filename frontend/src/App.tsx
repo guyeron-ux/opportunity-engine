@@ -79,6 +79,9 @@ export default function App() {
   const [showSystemLogic, setShowSystemLogic] = useState(false)
   const [calibratingIds, setCalibratingIds] = useState<Set<string>>(new Set())
   const [reratingIds, setReratingIds] = useState<Set<string>>(new Set())
+  const [showRunMenu, setShowRunMenu] = useState(false)
+  const [showGuidedInput, setShowGuidedInput] = useState(false)
+  const [guidedPrompt, setGuidedPrompt] = useState('')
 
   // Shared WebSocket message bus — notifications + banner both consume this
   const wsNotifyRef = useRef<((msg: WsMessage) => void) | null>(null)
@@ -175,6 +178,27 @@ export default function App() {
         setLastEvent('')
         setTriggerError(`Re-rate error: ${msg.data.error}`)
         break
+      case 'team_fit_start':
+        setCycleRunning(true)
+        setCycleStartedAt(new Date().toISOString())
+        setCycleStats({ signals: 0, scored: 0, total: msg.data.total as number })
+        setLastEvent(`Scoring team fit for ${msg.data.total} opportunities…`)
+        break
+      case 'team_fit_progress':
+        setCycleStats(s => ({ ...s, scored: msg.data.done as number, total: msg.data.total as number }))
+        setLastEvent(`Team fit scored: ${msg.data.title}${msg.data.score != null ? ` (${msg.data.score})` : ''}`)
+        refetch()
+        break
+      case 'team_fit_done':
+        setCycleRunning(false)
+        setLastEvent('')
+        refetch()
+        break
+      case 'team_fit_error':
+        setCycleRunning(false)
+        setLastEvent('')
+        setTriggerError(`Team fit error: ${msg.data.error}`)
+        break
       case 'opportunity_updated': {
         const updatedId = msg.data.id as string
         // Clear from any pending operation tracking
@@ -195,17 +219,75 @@ export default function App() {
 
   useWebSocket(handleWsMessage)
 
+  // Close run menu on outside click
+  useEffect(() => {
+    if (!showRunMenu) return
+    const handler = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      if (!target.closest('.relative')) { setShowRunMenu(false); setShowGuidedInput(false) }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [showRunMenu])
+
   async function triggerCycle() {
     setTriggerError('')
+    setShowRunMenu(false)
     try {
       const res = await api.triggerCycle()
+      if (!res.ok) setTriggerError(res.message)
+      else {
+        setCycleRunning(true)
+        setCycleStartedAt(new Date().toISOString())
+        setCycleStats({ signals: 0, scored: 0, total: 0 })
+        setLastEvent('Starting scouts…')
+      }
+    } catch { setTriggerError('Could not reach backend') }
+  }
+
+  async function triggerTargeted(domains: string[]) {
+    setTriggerError('')
+    setShowRunMenu(false)
+    try {
+      const res = await api.triggerTargetedCycle(domains)
+      if (!res.ok) setTriggerError(res.message)
+      else {
+        setCycleRunning(true)
+        setCycleStartedAt(new Date().toISOString())
+        setCycleStats({ signals: 0, scored: 0, total: 0 })
+        setLastEvent(`Targeted: ${domains.join(', ')}…`)
+      }
+    } catch { setTriggerError('Could not reach backend') }
+  }
+
+  async function triggerGuided() {
+    if (!guidedPrompt.trim()) return
+    setTriggerError('')
+    setShowRunMenu(false)
+    setShowGuidedInput(false)
+    try {
+      const res = await api.triggerGuidedCycle(guidedPrompt.trim())
+      if (!res.ok) setTriggerError(res.message)
+      else {
+        setCycleRunning(true)
+        setCycleStartedAt(new Date().toISOString())
+        setCycleStats({ signals: 0, scored: 0, total: 0 })
+        setLastEvent('Guided cycle: generating queries…')
+        setGuidedPrompt('')
+      }
+    } catch { setTriggerError('Could not reach backend') }
+  }
+
+  async function triggerTeamFit() {
+    setTriggerError('')
+    try {
+      const res = await api.scoreTeamFit()
       if (!res.ok) {
         setTriggerError(res.message)
       } else {
         setCycleRunning(true)
         setCycleStartedAt(new Date().toISOString())
-        setCycleStats({ signals: 0, scored: 0, total: 0 })
-        setLastEvent('Starting scouts…')
+        setLastEvent('Scoring team fit…')
       }
     } catch {
       setTriggerError('Could not reach backend')
@@ -328,13 +410,71 @@ export default function App() {
           >
             ⚖ Calibrate 75+
           </button>
-          <button
-            onClick={triggerCycle}
-            disabled={cycleRunning}
-            className="text-xs bg-violet-700 hover:bg-violet-600 disabled:opacity-40 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg font-semibold transition-colors"
-          >
-            {cycleRunning ? '⏳ Running…' : '▶ Run Cycle'}
-          </button>
+          {/* Run Cycle dropdown button */}
+          <div className="relative">
+            <div className="flex">
+              <button
+                onClick={() => { setShowRunMenu(m => !m); setShowGuidedInput(false) }}
+                disabled={cycleRunning}
+                className="text-xs bg-violet-700 hover:bg-violet-600 disabled:opacity-40 disabled:cursor-not-allowed text-white px-3 py-2 rounded-lg font-semibold transition-colors flex items-center gap-1.5"
+              >
+                {cycleRunning ? '⏳ Running…' : '▶ Run Cycle'}
+                {!cycleRunning && <span className="text-violet-300 text-[10px]">▼</span>}
+              </button>
+            </div>
+            {showRunMenu && (
+              <div className="absolute right-0 top-full mt-1 w-64 bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-50 py-1">
+                <button onClick={triggerCycle}
+                className="w-full text-left px-3 py-2 text-xs text-gray-200 hover:bg-gray-800">
+                ▶ Standard cycle
+              </button>
+              <div className="border-t border-gray-800 my-1" />
+              <div className="px-3 py-1.5 text-xs text-gray-500 uppercase tracking-wider">Targeted</div>
+                <button onClick={() => triggerTargeted(['energy'])}
+                  className="w-full text-left px-3 py-2 text-xs text-gray-200 hover:bg-gray-800">
+                  ⚡ Energy sector (5 opps)
+                </button>
+                <button onClick={() => triggerTargeted(['manufacturing'])}
+                  className="w-full text-left px-3 py-2 text-xs text-gray-200 hover:bg-gray-800">
+                  🏭 Manufacturing / Supply Chain (5 opps)
+                </button>
+                <button onClick={() => triggerTargeted(['energy', 'manufacturing'])}
+                  className="w-full text-left px-3 py-2 text-xs text-gray-200 hover:bg-gray-800">
+                  ⚡🏭 Both domains (5+5 opps)
+                </button>
+                <div className="border-t border-gray-800 my-1" />
+                <div className="px-3 py-1.5 text-xs text-gray-500 uppercase tracking-wider">Guided</div>
+                <button onClick={() => setShowGuidedInput(g => !g)}
+                  className="w-full text-left px-3 py-2 text-xs text-violet-300 hover:bg-gray-800">
+                  ✦ Custom prompt…
+                </button>
+                {showGuidedInput && (
+                  <div className="px-3 pb-2">
+                    <textarea
+                      autoFocus
+                      value={guidedPrompt}
+                      onChange={e => setGuidedPrompt(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); triggerGuided() } }}
+                      placeholder="e.g. industrial water treatment in the US"
+                      className="w-full bg-gray-800 border border-gray-600 rounded text-xs text-gray-200 placeholder-gray-600 p-2 resize-none focus:outline-none focus:border-violet-500"
+                      rows={2}
+                    />
+                    <button onClick={triggerGuided}
+                      disabled={!guidedPrompt.trim()}
+                      className="mt-1 w-full bg-violet-700 hover:bg-violet-600 disabled:opacity-40 text-white text-xs py-1.5 rounded transition-colors">
+                      Run →
+                    </button>
+                  </div>
+                )}
+                <div className="border-t border-gray-800 my-1" />
+                <div className="px-3 py-1.5 text-xs text-gray-500 uppercase tracking-wider">Team</div>
+                <button onClick={() => { setShowRunMenu(false); triggerTeamFit() }}
+                  className="w-full text-left px-3 py-2 text-xs text-teal-400 hover:bg-gray-800">
+                  👥 Score Team Fit (Guy + Ariel + Roy)
+                </button>
+              </div>
+            )}
+          </div>
           <NotificationPanel wsNotifyRef={wsNotifyRef} />
         </div>
       </header>

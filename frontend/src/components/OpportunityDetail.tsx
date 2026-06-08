@@ -295,6 +295,36 @@ export function OpportunityDetail({ opp, onClose, onUpdate }: Props) {
             </section>
           )}
 
+          {/* Team Fit */}
+          {opp.team_fit && (
+            <section>
+              <h3 className="text-xs font-semibold text-teal-600 uppercase tracking-wider mb-2">👥 Team Fit — Score: {opp.team_fit.score}</h3>
+              <div className="bg-teal-950/20 border border-teal-800/30 rounded-xl p-4 space-y-3">
+                <p className="text-sm text-gray-300 leading-relaxed">{opp.team_fit.rationale}</p>
+                <div className="space-y-1.5">
+                  {opp.team_fit.domain_match && (
+                    <div className="flex gap-2 text-xs">
+                      <span className="text-teal-500 shrink-0 font-semibold">Domain:</span>
+                      <span className="text-gray-300">{opp.team_fit.domain_match}</span>
+                    </div>
+                  )}
+                  {opp.team_fit.distribution_advantage && (
+                    <div className="flex gap-2 text-xs">
+                      <span className="text-teal-500 shrink-0 font-semibold">Distribution:</span>
+                      <span className="text-gray-300">{opp.team_fit.distribution_advantage}</span>
+                    </div>
+                  )}
+                  {opp.team_fit.execution_fit && (
+                    <div className="flex gap-2 text-xs">
+                      <span className="text-teal-500 shrink-0 font-semibold">Execution:</span>
+                      <span className="text-gray-300">{opp.team_fit.execution_fit}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </section>
+          )}
+
           {/* Moonshot / Pragmatic justification */}
           {opp.classification.moonshot_justification && (
             <section>

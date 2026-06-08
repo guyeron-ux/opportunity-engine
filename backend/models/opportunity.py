@@ -72,6 +72,14 @@ class DevilsAdvocate(BaseModel):
     biggest_threat: str = ""
 
 
+class TeamFit(BaseModel):
+    score: int = Field(ge=0, le=100)
+    rationale: str = ""
+    domain_match: str = ""
+    distribution_advantage: str = ""
+    execution_fit: str = ""
+
+
 class ChatMessage(BaseModel):
     role: str  # "user" | "assistant"
     content: str
@@ -99,6 +107,7 @@ class OpportunityEntry(BaseModel):
     user: UserInteraction = Field(default_factory=UserInteraction)
     cycle_id: str = ""
     devils_advocate: Optional[DevilsAdvocate] = None
+    team_fit: Optional[TeamFit] = None
 
 
 class ImportRecord(BaseModel):

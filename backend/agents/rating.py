@@ -2,7 +2,7 @@ from __future__ import annotations
 from datetime import datetime
 from backend.agents.base import BaseAgent
 from backend.models.opportunity import (
-    OpportunityEntry, Ratings, RatingFactor, Classification, ResearchData, DevilsAdvocate
+    OpportunityEntry, Ratings, RatingFactor, Classification, ResearchData, DevilsAdvocate, TeamFit
 )
 from backend.models.database import generate_opportunity_id, load_db
 
@@ -384,3 +384,96 @@ Return valid JSON only, no markdown."""
             title, opp.composite_score, classification.type
         )
         return opp
+
+    def score_team_fit(self, opp: OpportunityEntry) -> "TeamFit | None":
+        """Score an existing opportunity against the founding team profile."""
+        self._log.info("TeamFit: scoring '%s'", opp.title)
+
+        TEAM_PROFILE = """FOUNDING TEAM — Guy Eron + Ariel Porat + Roy Dar
+
+GUY ERON (GTM & Strategy Lead)
+- Senior Director Strategy at PTC Velocity (Arena PLM, Onshape)
+- Co-founded IKIDO (hardware DFM/BOM cost/risk intelligence), acquired by PTC 2024
+- Domain expertise: supply chain GTM, hardware product development, enterprise B2B SaaS
+- Network: PTC/Arena ecosystem, hardware manufacturing industry, Israeli tech
+- Role fit: GTM strategy, enterprise sales, business development
+
+ARIEL PORAT (Executive Lead — CEO candidate)
+- Former CEO Siemens Energy Europe (40+ countries)
+- Former CFO SolarEdge (public company)
+- Domain expertise: industrial/energy sectors, supply chain management, operational scaling
+- Role fit: CEO/COO, scaling operations, investor relations, enterprise partnerships
+
+ROY DAR (Technical/Product Lead)
+- Product Senior Director at Arena by PTC (Supply Chain Intelligence & AI)
+- Co-founded IKIDO as CTO/CPO, acquired by PTC 2024
+- Domain expertise: AI/ML, cybersecurity, enterprise architecture, IoT, supply chain intelligence, LLMs
+- Tech: Python, Go, Java, cloud (AWS/Azure/GCP), deep learning, RL
+- Network: Arena/PTC supply chain data moat, enterprise R&D community
+- Role fit: CTO/CPO, AI/product architecture
+
+TEAM STRENGTHS:
+- Full founding team: executive (CEO) + technical (CTO) + commercial (GTM)
+- Startup-to-acquisition DNA (IKIDO → PTC): proven ability to build and sell a company
+- Deep supply chain, PLM, and hardware manufacturing domain knowledge
+- Distribution advantage: PTC/Arena customer base as potential early adopters/design partners
+- AI/ML capability with domain-specific data access (supply chain, manufacturing)
+- Networks: industrial manufacturing, enterprise software, Israeli tech
+
+BEST FIT DOMAINS: supply chain intelligence, PLM/CAD tools, hardware-adjacent SaaS,
+enterprise B2B software, manufacturing operations, AI/ML for industrial verticals,
+IoT/edge for industrial, cybersecurity for enterprise, electronics/component sourcing.
+
+WEAK FIT DOMAINS: pure consumer apps, healthcare (no clinical domain), fintech without
+supply chain angle, pure government/defense, deep biotech/pharma."""
+
+        prompt = f"""Evaluate how well this startup opportunity fits the founding team described below.
+
+OPPORTUNITY:
+Title: {opp.title}
+Pain Point: {opp.research.pain_point_summary}
+Industry: {opp.classification.industry}
+Category: {opp.classification.category}
+Go-to-Market: {opp.classification.go_to_market}
+Solution: {opp.research.solution_hypothesis}
+Tags: {opp.classification.tags}
+
+{TEAM_PROFILE}
+
+Score the team fit on 0-100:
+- 85-100: This team has UNFAIR ADVANTAGE — domain expertise + distribution + execution all align
+- 70-84: Strong fit — 2 of 3 pillars align, clear path to execution
+- 55-69: Moderate fit — team can learn or hire the gaps, but not native domain experts
+- 40-54: Weak fit — significant gaps in domain, distribution, or execution capability
+- 0-39: Poor fit — team would be starting from scratch with no advantage
+
+Return JSON only:
+{{
+  "score": 0-100,
+  "rationale": "2-3 sentences: why this fits or doesn't fit this specific team",
+  "domain_match": "one sentence: does team have relevant domain expertise?",
+  "distribution_advantage": "one sentence: does team have unfair distribution or access?",
+  "execution_fit": "one sentence: can this CEO+CTO+GTM trio execute this?"
+}}"""
+
+        try:
+            result = self._call_json(
+                [{"role": "user", "content": prompt}],
+                system="You are a startup team-opportunity fit evaluator. Return valid JSON only.",
+                max_tokens=600,
+            )
+        except Exception as e:
+            self._log.error("TeamFit scoring failed for '%s': %s", opp.title, e)
+            return None
+
+        try:
+            return TeamFit(
+                score=max(0, min(100, int(result.get("score", 0)))),
+                rationale=result.get("rationale", ""),
+                domain_match=result.get("domain_match", ""),
+                distribution_advantage=result.get("distribution_advantage", ""),
+                execution_fit=result.get("execution_fit", ""),
+            )
+        except Exception as e:
+            self._log.error("TeamFit model construction failed for '%s': %s", opp.title, e)
+            return None

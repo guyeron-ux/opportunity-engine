@@ -24,7 +24,7 @@ if [ ! -d "frontend/node_modules" ]; then
 fi
 
 echo "→ Starting backend on :8000 ..."
-PYTHONPATH="$SCRIPT_DIR" uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload &
+PYTHONPATH="$SCRIPT_DIR" uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload --reload-exclude ".venv" --reload-exclude "frontend" --reload-exclude "data" --reload-exclude "logs" --reload-exclude "backups" &
 BACKEND_PID=$!
 
 echo "→ Starting frontend on :5173 ..."

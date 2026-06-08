@@ -23,6 +23,10 @@ async def lifespan(app: FastAPI):
     settings.logs_dir.mkdir(parents=True, exist_ok=True)
     settings.backups_dir.mkdir(parents=True, exist_ok=True)
 
+    # Clear any stuck cycle_running flag left by a previous crash/restart
+    from backend.models.database import update_db_settings
+    update_db_settings({"cycle_running": False})
+
     # Init orchestrator + scheduler
     from backend.agents.orchestrator import Orchestrator
     from backend.api.websocket import ws_manager

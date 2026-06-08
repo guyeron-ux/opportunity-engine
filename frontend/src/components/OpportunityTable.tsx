@@ -22,6 +22,19 @@ function ScoreBadge({ score }: { score: number }) {
   )
 }
 
+function TeamFitBadge({ score }: { score: number }) {
+  const color =
+    score >= 85 ? 'bg-teal-900 text-teal-300' :
+    score >= 70 ? 'bg-teal-900/60 text-teal-400' :
+    score >= 55 ? 'bg-gray-800 text-gray-400' :
+    'bg-gray-900 text-gray-600'
+  return (
+    <span className={`inline-block font-mono text-xs px-1.5 py-0.5 rounded ${color}`} title="Team fit score">
+      👥{score}
+    </span>
+  )
+}
+
 function TypeBadge({ type }: { type: string }) {
   return (
     <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
@@ -143,6 +156,7 @@ export function OpportunityTable({ opportunities, onOpen, loading, checkedIds, o
                         {opp.classification.go_to_market}
                       </span>
                     )}
+                    {opp.team_fit && <TeamFitBadge score={opp.team_fit.score} />}
                   </div>
                 </td>
                 <td className="py-3 px-4 text-gray-400 text-xs">{opp.classification.industry}</td>

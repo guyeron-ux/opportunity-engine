@@ -56,6 +56,14 @@ export interface DevilsAdvocate {
   biggest_threat: string
 }
 
+export interface TeamFit {
+  score: number
+  rationale: string
+  domain_match: string
+  distribution_advantage: string
+  execution_fit: string
+}
+
 export interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
@@ -83,6 +91,7 @@ export interface Opportunity {
   user: UserInteraction
   cycle_id: string
   devils_advocate?: DevilsAdvocate
+  team_fit?: TeamFit
 }
 
 export interface CycleStatus {
@@ -132,6 +141,7 @@ export const api = {
     }),
   getCycleStatus: () => req<CycleStatus>('/cycle/status'),
   getImports: () => req<Array<{ id: string; filename: string; imported_at: string; signals_extracted: number; opportunities_added: number }>>('/imports'),
+  scoreTeamFit: () => req<{ ok: boolean; message: string }>('/team-fit/score', { method: 'POST' }),
   rerateAll: () => req<{ ok: boolean; message: string }>('/opportunities/rerate', { method: 'POST' }),
   rerateCalibrate: (threshold = 75) =>
     req<{ ok: boolean; message: string }>('/opportunities/rerate-calibrate', {

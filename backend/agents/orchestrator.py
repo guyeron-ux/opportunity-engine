@@ -185,6 +185,56 @@ class Orchestrator:
             "top_opportunity": max(new_opps, key=lambda o: o.composite_score).title if new_opps else None,
         }
 
+    # --- Team Fit scoring ---
+
+    def run_team_fit_scoring(self):
+        if self._cycle_running:
+            return False
+        self._cycle_running = True
+        self._cycle_abort = False
+        update_db_settings({"cycle_running": True})
+        asyncio.run(self._async_team_fit())
+        return True
+
+    async def _async_team_fit(self):
+        from backend.models.database import load_db, save_db
+        try:
+            db = load_db()
+            opps = db.opportunities[:]
+            await self._broadcast("team_fit_start", {"total": len(opps)})
+            log.info("Team fit scoring %d opportunities", len(opps))
+
+            loop = asyncio.get_event_loop()
+            for i, opp in enumerate(opps):
+                if self._cycle_abort:
+                    break
+                try:
+                    team_fit = await loop.run_in_executor(None, self._rater.score_team_fit, opp)
+                    if team_fit:
+                        opp.team_fit = team_fit
+                        opp.updated_at = datetime.utcnow()
+                        db.opportunities.sort(key=lambda o: o.composite_score, reverse=True)
+                        save_db(db)
+                except Exception as e:
+                    log.error("Team fit failed for '%s': %s", opp.title, e)
+                await self._broadcast("team_fit_progress", {
+                    "done": i + 1,
+                    "total": len(opps),
+                    "id": opp.id,
+                    "title": opp.title,
+                    "score": opp.team_fit.score if opp.team_fit else None,
+                })
+
+            update_db_settings({"cycle_running": False})
+            await self._broadcast("team_fit_done", {"total": len(opps)})
+            log.info("Team fit scoring complete")
+        except Exception as e:
+            log.error("Team fit error: %s", e, exc_info=True)
+            update_db_settings({"cycle_running": False})
+            await self._broadcast("team_fit_error", {"error": str(e)})
+        finally:
+            self._cycle_running = False
+
     # --- Rerate existing opportunities ---
 
     def rerate_all(self):

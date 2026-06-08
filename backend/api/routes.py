@@ -328,6 +328,16 @@ def abort_cycle():
     return {"ok": True}
 
 
+@router.post("/team-fit/score")
+def score_team_fit():
+    orch = get_orchestrator()
+    if orch._cycle_running:
+        return {"ok": False, "message": "Cycle already running"}
+    thread = threading.Thread(target=orch.run_team_fit_scoring, daemon=True)
+    thread.start()
+    return {"ok": True, "message": "Team fit scoring started"}
+
+
 @router.post("/opportunities/rerate")
 def rerate_opportunities():
     orch = get_orchestrator()
